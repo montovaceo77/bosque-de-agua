@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bosque de Agua — Despachos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F0EEE3; --card: #FBFAF5; --text: #1E271F; --muted: #5F6858;
+    --primary: #2E4A3A; --primary-text: #F5F3E8; --accent: #B0752E; --accent-bg: #F3E4CC;
+    --positive: #3F6B45; --positive-bg: #DEE8DA; --border: #D4CEBB; --danger: #A5432B;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; padding-bottom: 80px; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.45; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; margin: 0; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 26px 16px 40px; }
+  header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
+  header.top .kicker { color: var(--muted); font-size: 0.92rem; margin: 0 0 4px; }
+  header.top h1 { font-size: 1.7rem; color: var(--primary); }
+  .top-right { display: flex; align-items: center; gap: 10px; }
+  .save-status { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .btn-outline { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: 0.84rem; cursor: pointer; white-space: nowrap; }
+
+  .banner { background: var(--accent-bg); color: var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 0.84rem; margin-bottom: 14px; }
+
+  .hero { background: var(--primary); color: var(--primary-text); border-radius: 14px; padding: 20px 22px; margin-bottom: 18px; }
+  .hero .label { font-size: 0.86rem; opacity: 0.82; margin-bottom: 4px; }
+  .hero .amount { font-size: 2.2rem; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .hero .breakdown { display: flex; gap: 22px; margin-top: 14px; font-size: 0.84rem; opacity: 0.92; flex-wrap: wrap; }
+  .hero .breakdown strong { display: block; font-size: 1rem; font-variant-numeric: tabular-nums; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+  .card > h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 12px; }
+  .sec-head { display: flex; justify-content: space-between; align-items: center; width: 100%; background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; color: inherit; text-align: left; }
+  .sec-head h2 { font-size: 1.05rem; color: var(--primary); }
+  .sec-head .right { display: flex; align-items: center; gap: 10px; }
+  .count { font-size: 0.76rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 2px 9px; font-variant-numeric: tabular-nums; }
+  .chev { color: var(--muted); font-size: 0.85rem; transition: transform 0.15s; }
+  .sec.open .chev { transform: rotate(180deg); }
+  .sec-body { margin-top: 14px; }
+
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; }
+  input, select { width: 100%; padding: 10px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; font-family: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .row { display: grid; gap: 12px; margin-bottom: 12px; }
+  .row.two { grid-template-columns: 1fr 1fr; }
+  .inline-add { display: flex; gap: 8px; margin: -2px 0 12px; }
+  .inline-add input { flex: 1; }
+  .btn-small { padding: 9px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; font-size: 0.86rem; cursor: pointer; white-space: nowrap; }
+  button.primary { width: 100%; padding: 13px; border: 0; border-radius: 9px; background: var(--primary); color: var(--primary-text); font-family: inherit; font-size: 0.97rem; font-weight: 600; cursor: pointer; }
+  button.secondary { width: 100%; padding: 13px; border: 1px solid var(--primary); border-radius: 9px; background: transparent; color: var(--primary); font-family: inherit; font-size: 0.97rem; font-weight: 600; cursor: pointer; }
+  .link-btn { background: none; border: 0; color: var(--muted); font-family: inherit; font-size: 0.8rem; cursor: pointer; padding: 2px 4px; }
+  .link-btn:hover { color: var(--danger); }
+  .form-msg { color: var(--danger); font-size: 0.84rem; margin: 0 0 10px; }
+  .muted { color: var(--muted); font-size: 0.84rem; }
+
+  .items-block { border: 1px dashed var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .items-block > label { margin-bottom: 10px; }
+  .item-row { background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px; margin-bottom: 10px; }
+  .type-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+  .type-toggle button { flex: 1; padding: 8px; border-radius: 7px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: inherit; font-size: 0.86rem; cursor: pointer; }
+  .type-toggle button.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+  .item-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .item-fields input, .item-row input[type=text] { font-size: 0.9rem; padding: 8px 9px; }
+  .item-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.86rem; }
+  .item-foot .subtotal { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .add-item-btn { width: 100%; padding: 9px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--primary); font-family: inherit; font-size: 0.88rem; cursor: pointer; font-weight: 600; }
+  .corte-block { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .total-preview { margin: 4px 0 12px; font-size: 0.92rem; color: var(--muted); }
+  .total-preview strong { color: var(--text); font-variant-numeric: tabular-nums; }
+  .cancel-edit { width: 100%; padding: 10px; margin-top: 8px; border: 0; background: none; color: var(--muted); font-family: inherit; font-size: 0.86rem; cursor: pointer; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .toolbar > * { flex: 1 1 130px; min-width: 0; }
+  .toolbar .btn-small { flex: 0 0 auto; }
+  .bulk { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: var(--accent-bg); border-radius: 9px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.86rem; }
+  .bulk .grow { flex: 1; }
+  .more-btn { width: 100%; padding: 9px; margin-bottom: 10px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--primary); font-family: inherit; font-size: 0.86rem; cursor: pointer; }
+  .empty { color: var(--muted); font-size: 0.9rem; padding: 16px 0; text-align: center; }
+
+  .trip { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .trip.status-pagado { border-left: 4px solid var(--positive); }
+  .trip.status-parcial { border-left: 4px solid var(--accent); }
+  .trip-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .trip-main { flex: 1; min-width: 0; }
+  .trip .empresa { font-weight: 600; font-size: 0.95rem; }
+  .trip .meta { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .trip-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .sel-check { width: 20px; height: 20px; margin: 2px 8px 0 0; padding: 0; flex-shrink: 0; }
+  .pago-badge { display: inline-block; font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; font-weight: 600; margin-left: 6px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; font-family: inherit; }
+  .pago-badge.parcial { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-bg); }
+  .pago-badge.pagado { background: var(--positive-bg); color: var(--positive); border-color: var(--positive-bg); }
+  .pending-badge { display: inline-block; background: var(--accent-bg); color: var(--accent); font-size: 0.72rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; margin-left: 6px; }
+  .trip-items { border-top: 1px solid var(--border); padding-top: 6px; }
+  .line { display: flex; justify-content: space-between; gap: 10px; font-size: 0.85rem; padding: 3px 0; }
+  .line .desc { color: var(--muted); }
+  .line .amt { font-variant-numeric: tabular-nums; }
+  .line.total { font-weight: 600; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 0.95rem; }
+
+  .row-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; margin-bottom: 8px; }
+  .row-card .empresa { font-weight: 600; font-size: 0.93rem; }
+  .row-card .meta { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .row-card .monto { color: var(--positive); font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 4px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .kpi { background: var(--primary); color: var(--primary-text); border-radius: 12px; padding: 14px 16px; }
+  .kpi.alt { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .kpi .label { font-size: 0.76rem; opacity: 0.85; margin-bottom: 5px; }
+  .kpi.alt .label { color: var(--muted); opacity: 1; }
+  .kpi .value { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.005em; font-variant-numeric: tabular-nums; }
+  .note { color: var(--muted); font-size: 0.78rem; margin: -2px 0 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.02em; position: sticky; top: 0; background: var(--card); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 600; border-top: 2px solid var(--border); border-bottom: 0; }
+  tr:last-child td { border-bottom: 0; }
+  .table-scroll { overflow-x: auto; }
+  .table-box { max-height: 340px; overflow-y: auto; margin-bottom: 12px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.pagado { background: var(--positive); }
+  .dot.parcial { background: var(--accent); }
+  .dot.pendiente { background: var(--border); }
+
+  .filters { margin-bottom: 14px; }
+  .frow { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .frow > div { flex: 1 1 160px; min-width: 0; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-family: inherit; font-size: 0.82rem; cursor: pointer; }
+  .chips button.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+  .hbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .hbar-label { width: 130px; flex-shrink: 0; font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hbar-track { flex: 1; background: var(--bg); border-radius: 6px; height: 24px; overflow: hidden; }
+  .hbar-fill { height: 100%; min-width: 4px; border-radius: 6px; background: var(--primary); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; }
+  .hbar-fill span { color: var(--primary-text); font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
+
+  .bottom-tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--card); border-top: 1px solid var(--border); z-index: 50; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .tab-btn { flex: 1; background: none; border: 0; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit; font-size: 0.72rem; color: var(--muted); cursor: pointer; }
+  .tab-btn .icon { font-size: 1.15rem; }
+  .tab-btn.active { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ================= REGISTRAR ================= -->
+<div class="wrap" id="viewRegistro">
+  <header class="top">
+    <div>
+      <p class="kicker">Registro de despachos</p>
+      <h1>Bosque de Agua</h1>
+    </div>
+    <div class="top-right">
+      <span class="save-status" id="saveStatus" hidden></span>
+      <button type="button" class="btn-outline" id="refreshBtn">Actualizar</button>
+    </div>
+  </header>
+
+  <div class="banner" id="setupNote" hidden>Falta pegar la URL de tu Apps Script en la línea APPS_SCRIPT_URL de este archivo.</div>
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="hero">
+    <div class="label">Saldo pendiente por cobrar</div>
+    <div class="amount" id="heroPendiente">$0</div>
+    <div class="breakdown">
+      <div>Facturado total <strong id="heroFacturado">$0</strong></div>
+      <div>Pagado <strong id="heroPagado">$0</strong></div>
+      <div>Viajes <strong id="heroCount">0</strong></div>
+      <div>Con precio pendiente <strong id="heroPrecioPend">0</strong></div>
+      <div>Toneladas totales <strong id="heroTon">0</strong></div>
+    </div>
+  </div>
+
+  <!-- Registrar viaje -->
+  <div class="card sec" data-sec="viaje">
+    <button type="button" class="sec-head" data-toggle="viaje"><h2>Registrar viaje</h2><span class="right"><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <form id="tripForm" autocomplete="off">
+        <div class="row two">
+          <div><label for="fecha">Fecha</label><input type="date" id="fecha" required></div>
+          <div><label for="empresa">Empresa</label><select id="empresa"></select></div>
+        </div>
+        <div class="inline-add">
+          <input type="text" id="nuevaEmpresa" placeholder="Agregar nueva empresa">
+          <button type="button" class="btn-small" id="addCompanyBtn">Agregar</button>
+        </div>
+
+        <div class="items-block">
+          <label>Madera enviada en este viaje</label>
+          <div id="itemsList"></div>
+          <button type="button" class="add-item-btn" id="addItemBtn">+ Agregar ítem de madera</button>
+        </div>
+
+        <div class="row two">
+          <div><label for="flete">Flete (opcional)</label><input type="number" id="flete" step="any" min="0" placeholder="0"></div>
+          <div></div>
+        </div>
+        <div class="corte-block">
+          <label>Costo de corte (se paga por tonelada, sea Rolo o Alfarda)</label>
+          <div class="row two" style="margin-bottom:8px;">
+            <div><label for="corteToneladas">Toneladas totales del viaje</label><input type="number" id="corteToneladas" step="any" min="0" placeholder="0"></div>
+            <div><label for="cortePrecioTon">Precio de corte por tonelada</label><input type="number" id="cortePrecioTon" step="any" min="0" placeholder="0"></div>
+          </div>
+          <div class="total-preview" style="margin:0;">Costo de corte: <strong id="corteTotalPreview">$0</strong></div>
+        </div>
+        <div class="row">
+          <div><label for="notas">Notas (opcional)</label><input type="text" id="notas" placeholder="Placa del carro, observaciones..."></div>
+        </div>
+
+        <p class="form-msg" id="tripMsg" hidden></p>
+        <div class="total-preview">Total del viaje: <strong id="totalPreview">$0</strong></div>
+        <button type="submit" class="primary" id="submitBtn">Registrar viaje</button>
+        <button type="button" class="cancel-edit" id="cancelEditBtn" hidden>Cancelar edición</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Registrar pago -->
+  <div class="card sec" data-sec="pago">
+    <button type="button" class="sec-head" data-toggle="pago"><h2>Registrar pago recibido</h2><span class="right"><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <form id="paymentForm" autocomplete="off">
+        <div class="row two">
+          <div><label for="pagoFecha">Fecha</label><input type="date" id="pagoFecha" required></div>
+          <div><label for="pagoEmpresa">Empresa</label><select id="pagoEmpresa"></select></div>
+        </div>
+        <div class="row"><div><label for="pagoMonto">Monto recibido</label><input type="number" id="pagoMonto" step="any" min="0" placeholder="Puede cubrir uno o varios viajes"></div></div>
+        <div class="row"><div><label for="pagoNotas">Notas (opcional)</label><input type="text" id="pagoNotas" placeholder="A qué viajes corresponde, forma de pago..."></div></div>
+        <p class="form-msg" id="pagoMsg" hidden></p>
+        <button type="submit" class="secondary">Registrar pago</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Abonar al corte -->
+  <div class="card sec" data-sec="abono">
+    <button type="button" class="sec-head" data-toggle="abono"><h2>Abonar al corte de madera</h2><span class="right"><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <form id="abonoForm" autocomplete="off">
+        <div class="row two">
+          <div><label for="abonoFecha">Fecha</label><input type="date" id="abonoFecha" required></div>
+          <div><label for="abonoMonto">Monto abonado</label><input type="number" id="abonoMonto" step="any" min="0" placeholder="0"></div>
+        </div>
+        <div class="row"><div><label for="abonoNotas">Notas (opcional)</label><input type="text" id="abonoNotas" placeholder="A quién se le pagó, forma de pago..."></div></div>
+        <p class="form-msg" id="abonoMsg" hidden></p>
+        <button type="submit" class="secondary">Registrar abono</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Viajes despachados -->
+  <div class="card sec" data-sec="viajes">
+    <button type="button" class="sec-head" data-toggle="viajes"><h2>Viajes despachados</h2><span class="right"><span class="count" id="cntViajes">0</span><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <div class="toolbar">
+        <select id="vfEmpresa"></select>
+        <select id="vfEstado">
+          <option value="">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Parcial">Abono parcial</option>
+          <option value="Pagado">Pagado</option>
+        </select>
+        <input type="search" id="vfQ" placeholder="Buscar placa o nota">
+      </div>
+      <div class="toolbar">
+        <input type="date" id="vfDesde" title="Desde">
+        <input type="date" id="vfHasta" title="Hasta">
+        <button type="button" class="btn-small" id="vfSelectMode">Seleccionar varios</button>
+      </div>
+      <div class="bulk" id="bulkBar" hidden>
+        <span class="grow" id="bulkCount">0 seleccionados</span>
+        <button type="button" class="btn-small" id="bulkAll">Seleccionar todos los filtrados</button>
+        <button type="button" class="btn-small" data-bulk="Pendiente">→ Pendiente</button>
+        <button type="button" class="btn-small" data-bulk="Parcial">→ Parcial</button>
+        <button type="button" class="btn-small" data-bulk="Pagado">→ Pagado</button>
+      </div>
+      <p class="muted" id="viajesSummary" style="margin:0 0 10px;"></p>
+      <div id="tripsList"></div>
+    </div>
+  </div>
+
+  <!-- Pagos recibidos -->
+  <div class="card sec" data-sec="pagos">
+    <button type="button" class="sec-head" data-toggle="pagos"><h2>Pagos recibidos</h2><span class="right"><span class="count" id="cntPagos">0</span><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <div class="toolbar"><select id="pfEmpresa"></select></div>
+      <div id="paymentsList"></div>
+    </div>
+  </div>
+
+  <!-- Rentabilidad -->
+  <div class="card sec" data-sec="rent">
+    <button type="button" class="sec-head" data-toggle="rent"><h2>Rentabilidad</h2><span class="right"><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <div class="kpi-grid" id="rentGrid"></div>
+    </div>
+  </div>
+
+  <!-- Corte de madera -->
+  <div class="card sec" data-sec="corte">
+    <button type="button" class="sec-head" data-toggle="corte"><h2>Corte de madera: reporte y abonos</h2><span class="right"><span class="count" id="cntAbonos">0</span><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <p class="muted" style="margin:0 0 10px;">Reporte para el equipo de corte (sin precio de venta).</p>
+      <div class="row two" style="margin-bottom:10px;">
+        <div>
+          <label for="corteTarifa">Tarifa por tonelada (opcional)</label>
+          <input type="number" id="corteTarifa" step="any" min="0" placeholder="Vacío = usa el precio de cada viaje">
+        </div>
+        <div></div>
+      </div>
+      <div class="table-box">
+        <table>
+          <thead><tr><th>Fecha</th><th class="num">Toneladas</th></tr></thead>
+          <tbody id="corteReportBody"></tbody>
+          <tfoot id="corteReportFoot"></tfoot>
+        </table>
+      </div>
+      <div class="kpi-grid" id="corteSaldo"></div>
+      <div id="abonosList"></div>
+    </div>
+  </div>
+
+  <!-- Resumen por empresa -->
+  <div class="card sec" data-sec="empresas">
+    <button type="button" class="sec-head" data-toggle="empresas"><h2>Resumen por empresa</h2><span class="right"><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Facturado</th><th class="num">Pagado</th><th class="num">Pendiente</th></tr></thead>
+          <tbody id="empresasBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RESUMEN ================= -->
+<div class="wrap" id="viewResumen" hidden>
+  <header class="top">
+    <div>
+      <p class="kicker">Resumen ejecutivo</p>
+      <h1>Bosque de Agua</h1>
+    </div>
+  </header>
+
+  <div class="card filters">
+    <div class="frow">
+      <div><label for="rfEmpresa">Empresa</label><select id="rfEmpresa"></select></div>
+      <div><label for="rfDesde">Desde</label><input type="date" id="rfDesde"></div>
+      <div><label for="rfHasta">Hasta</label><input type="date" id="rfHasta"></div>
+    </div>
+    <div class="frow">
+      <div><label>Tipo de madera</label>
+        <div class="chips" id="rfTipo"><button type="button" data-val="Todos" class="active">Todos</button><button type="button" data-val="Rolo">Rolo</button><button type="button" data-val="Alfarda">Alfarda</button></div>
+      </div>
+      <div><label>Estado de pago</label>
+        <div class="chips" id="rfEstado"><button type="button" data-val="Todos" class="active">Todos</button><button type="button" data-val="Pendiente">Pendiente</button><button type="button" data-val="Parcial">Parcial</button><button type="button" data-val="Pagado">Pagado</button></div>
+      </div>
+    </div>
+    <button type="button" class="link-btn" id="rfClear">Quitar filtros</button>
+  </div>
+
+  <div class="kpi-grid" id="kpiMain"></div>
+  <div class="kpi-grid" id="kpiSecondary"></div>
+  <p class="note">Pagado y pendiente se calculan con los pagos recibidos de la empresa y las fechas elegidas; los pagos no están ligados a un viaje ni a un tipo de madera. Con filtro de tipo o estado, las toneladas, fletes y cortes cuentan los viajes completos que incluyen esa selección.</p>
+
+  <div class="card"><h2>Ingresos por empresa</h2><div id="rfBars"></div></div>
+
+  <div class="card"><h2>Detalle por empresa</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Toneladas</th><th class="num">Facturado</th><th class="num">Pagado</th><th class="num">Pendiente</th><th class="num">% cobrado</th></tr></thead>
+        <tbody id="rfTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card"><h2>Fletes y corte</h2><div class="kpi-grid" id="kpiCosts"></div></div>
+
+  <div class="card"><h2>Viajes recientes</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Fecha</th><th>Empresa</th><th>Tipo</th><th class="num">Total</th><th>Estado</th></tr></thead>
+        <tbody id="rfRecent"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-tabs">
+  <button type="button" class="tab-btn active" data-view="registro"><span class="icon">📋</span><span>Registrar</span></button>
+  <button type="button" class="tab-btn" data-view="resumen"><span class="icon">📊</span><span>Resumen</span></button>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+
+  // ====== Configuración ======
+  // Pega aquí la URL de tu Apps Script (termina en /exec)
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHZf-wNCgukdtRRR3phXGE_gvLFN6RHoi4THUfM0feE0WvODFVzv9ZciUUbaxZ86hqwg/exec';
+  const CACHE_KEY = 'bosque_agua_cache_v1'; // distinto al de otras apps del mismo sitio
+  const PAGE = 30;
+  const ESTADOS = ['', 'Parcial', 'Pagado'];
+
+  // ====== Utilidades ======
+  const $ = (id) => document.getElementById(id);
+  const raf = window.requestAnimationFrame ? window.requestAnimationFrame.bind(window) : (fn) => setTimeout(fn, 0);
+  const nf = new Intl.NumberFormat('es-CO');
+  const cf = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fmt = (n) => cf.format(n || 0);
+  const fmtNum = (n) => nf.format(n || 0);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = (n) => (n < 10 ? '0' + n : '' + n);
+  function todayISO() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function toDateOnly(v) { if (!v) return ''; const s = String(v); return s.indexOf('T') !== -1 ? s.split('T')[0] : s.slice(0, 10); }
+  const fechaMemo = new Map();
+  function fechaLegible(v) {
+    const s = toDateOnly(v);
+    if (!s) return '';
+    let out = fechaMemo.get(s);
+    if (out === undefined) {
+      const p = s.split('-').map(Number);
+      const d = new Date(p[0], (p[1] || 1) - 1, p[2] || 1);
+      out = isNaN(d.getTime()) ? s : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+      fechaMemo.set(s, out);
+    }
+    return out;
+  }
+  function uuid() {
+    if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+  const estadoNombre = (e) => (e === 'Pagado' ? 'Pagado' : e === 'Parcial' ? 'Parcial' : 'Pendiente');
+  const cmpFecha = (a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0);
+
+  // ====== Estado ======
+  let trips = [], companies = [], payments = [], abonos = [];
+  let pending = 0, mutations = 0, needsReload = false, hadError = false, hasCache = false;
+  let loadingText = '';
+  let sendChain = Promise.resolve();
+  let view = 'registro';
+  const openSecs = {};
+  let editingId = null, formItems = [], itemSeq = 0;
+  const vf = { empresa: '', estado: '', q: '', desde: '', hasta: '', shown: PAGE };
+  const pf = { empresa: '', shown: PAGE };
+  const af = { shown: PAGE };
+  let selectMode = false;
+  const selected = new Set();
+  const rf = { empresa: '', tipo: 'Todos', estado: 'Todos', desde: '', hasta: '' };
+
+  // ====== Normalización ======
+  function normTrip(t) {
+    const items = t.items || [];
+    const total = items.reduce((s, i) => s + (+i.subtotal || 0), 0);
+    const flete = +t.flete || 0, costoCorte = +t.costoCorte || 0;
+    return {
+      id: String(t.id), fecha: toDateOnly(t.fecha), empresa: t.empresa || '', notas: t.notas || '',
+      flete: flete, corteToneladas: +t.corteToneladas || 0, cortePrecioTon: +t.cortePrecioTon || 0, costoCorte: costoCorte,
+      estadoPago: t.estadoPago || '', items: items,
+      total: total, neto: total - flete - costoCorte,
+      pendingPrice: items.some((i) => !i.precioUnitario)
+    };
+  }
+  const normPay = (p) => ({ pagoId: String(p.pagoId), fecha: toDateOnly(p.fecha), empresa: p.empresa || '', monto: +p.monto || 0, notas: p.notas || '' });
+  const normAbono = (a) => ({ abonoId: String(a.abonoId), fecha: toDateOnly(a.fecha), monto: +a.monto || 0, notas: a.notas || '' });
+
+  function applyServerData(d) {
+    trips = (d.trips || []).map(normTrip).sort(cmpFecha);
+    companies = (d.companies || []).map(String).sort((a, b) => a.localeCompare(b, 'es'));
+    payments = (d.payments || []).map(normPay).sort(cmpFecha);
+    abonos = (d.abonosCorte || []).map(normAbono).sort(cmpFecha);
+    const ids = new Set(trips.map((t) => t.id));
+    Array.from(selected).forEach((id) => { if (!ids.has(id)) selected.delete(id); });
+    renderAll();
+  }
+
+  // ====== Caché local ======
+  let cacheTimer = null;
+  function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ trips: trips, companies: companies, payments: payments, abonos: abonos })); } catch (e) {} }
+  function scheduleSaveCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(saveCache, 800); }
+  function loadCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      trips = d.trips || []; companies = d.companies || []; payments = d.payments || []; abonos = d.abonos || [];
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ====== Avisos y estado de guardado ======
+  function showBanner(msg) { const b = $('banner'); b.textContent = msg; b.hidden = false; }
+  function hideBanner() { $('banner').hidden = true; }
+  function updateStatus() {
+    const el = $('saveStatus');
+    const txt = pending > 0 ? 'Guardando…' : loadingText;
+    el.textContent = txt;
+    el.hidden = !txt;
+  }
+  function flashSaved() { loadingText = 'Guardado ✓'; updateStatus(); setTimeout(() => { if (loadingText === 'Guardado ✓') { loadingText = ''; updateStatus(); } }, 2000); }
+  function urlOk() {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PEGA_AQUI') !== -1) { $('setupNote').hidden = false; return false; }
+    return true;
+  }
+
+  // ====== Red ======
+  async function loadData(fresh) {
+    if (!urlOk()) return;
+    const v = mutations;
+    loadingText = 'Actualizando…'; updateStatus();
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + (fresh ? '?fresh=1' : ''));
+      const d = await res.json();
+      if (v !== mutations || pending > 0) { needsReload = true; }
+      else { applyServerData(d); hasCache = true; hideBanner(); }
+    } catch (e) {
+      showBanner(hasCache ? 'Sin conexión con la hoja: estás viendo la última copia guardada.' : 'No se pudo conectar con la hoja de cálculo. Revisa la URL o tu conexión y pulsa "Actualizar".');
+    } finally {
+      loadingText = ''; updateStatus();
+    }
+  }
+
+  // Cada cambio se ve al instante en pantalla y se envía a la hoja en segundo plano, en orden.
+  function send(payload) {
+    mutations++;
+    if (!urlOk()) return;
+    pending++; updateStatus();
+    sendChain = sendChain.then(async () => {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const d = await res.json();
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'Error');
+      } catch (e) {
+        hadError = true;
+      } finally {
+        pending--; updateStatus();
+        if (pending === 0) {
+          if (hadError) {
+            hadError = false;
+            showBanner('No se pudo guardar un cambio. Se recargó la información de la hoja: revisa y repite lo que falte.');
+            loadData(true);
+          } else if (needsReload) {
+            needsReload = false; loadData(true);
+          } else { flashSaved(); }
+        }
+      }
+    });
+  }
+  window.addEventListener('beforeunload', (e) => { if (pending > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ====== Render general ======
+  let renderQueued = false;
+  function renderAll() {
+    if (renderQueued) return;
+    renderQueued = true;
+    raf(() => { renderQueued = false; doRender(); });
+  }
+  const sectionRenderers = {
+    viajes: () => renderTrips(),
+    pagos: () => renderPayments(),
+    rent: () => renderRent(),
+    corte: () => renderCorte(),
+    empresas: () => renderEmpresas()
+  };
+  function doRender() {
+    renderHero();
+    renderSelects(false);
+    $('cntViajes').textContent = fmtNum(trips.length);
+    $('cntPagos').textContent = fmtNum(payments.length);
+    $('cntAbonos').textContent = fmtNum(abonos.length);
+    if (view === 'registro') {
+      Object.keys(sectionRenderers).forEach((k) => { if (openSecs[k]) sectionRenderers[k](); });
+    } else {
+      renderResumen();
+    }
+    scheduleSaveCache();
+  }
+
+  function renderHero() {
+    let fact = 0, tons = 0, pendPrice = 0, pag = 0;
+    for (const t of trips) { fact += t.total; tons += t.corteToneladas; if (t.pendingPrice) pendPrice++; }
+    for (const p of payments) pag += p.monto;
+    $('heroPendiente').textContent = fmt(fact - pag);
+    $('heroFacturado').textContent = fmt(fact);
+    $('heroPagado').textContent = fmt(pag);
+    $('heroCount').textContent = fmtNum(trips.length);
+    $('heroPrecioPend').textContent = fmtNum(pendPrice);
+    $('heroTon').textContent = fmtNum(tons) + ' ton';
+  }
+
+  let lastSelKey = null;
+  function setSel(id, html) {
+    const el = $(id); const prev = el.value;
+    el.innerHTML = html;
+    if (prev && Array.prototype.some.call(el.options, (o) => o.value === prev)) el.value = prev;
+  }
+  function renderSelects(force) {
+    const key = companies.join('\u0001');
+    if (!force && key === lastSelKey) return;
+    lastSelKey = key;
+    const opts = companies.map((c) => '<option value="' + esc(c) + '">' + esc(c) + '</option>').join('');
+    const formOpts = companies.length ? opts : '<option value="">Agrega una empresa abajo</option>';
+    setSel('empresa', formOpts);
+    setSel('pagoEmpresa', formOpts);
+    const all = '<option value="">Todas las empresas</option>' + opts;
+    ['vfEmpresa', 'pfEmpresa', 'rfEmpresa'].forEach((id) => setSel(id, all));
+  }
+
+  // ====== Viajes: lista ======
+  function describeItem(it) {
+    const p = it.precioUnitario ? fmt(it.precioUnitario) + (it.tipo === 'Rolo' ? '/ton' : '/unid') : 'precio pendiente';
+    if (it.tipo === 'Rolo') return 'Rolo · ' + fmtNum(it.cantidad) + ' ton · ' + p;
+    return 'Alfarda · ' + fmtNum(it.cantidad) + ' unid' + (it.medida ? ' (' + it.medida + ')' : '') + ' · ' + p;
+  }
+  function filteredTrips() {
+    const q = vf.q.trim().toLowerCase();
+    return trips.filter((t) => {
+      if (vf.empresa && t.empresa !== vf.empresa) return false;
+      if (vf.estado && estadoNombre(t.estadoPago) !== vf.estado) return false;
+      if (vf.desde && t.fecha < vf.desde) return false;
+      if (vf.hasta && t.fecha > vf.hasta) return false;
+      if (q && (t.empresa + ' ' + t.notas).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+  }
+  function tripHTML(t) {
+    const st = t.estadoPago;
+    const cls = 'trip' + (st === 'Pagado' ? ' status-pagado' : st === 'Parcial' ? ' status-parcial' : '');
+    const label = st === 'Pagado' ? 'Pagado' : st === 'Parcial' ? 'Abono parcial' : 'Pendiente';
+    const pcls = 'pago-badge' + (st === 'Pagado' ? ' pagado' : st === 'Parcial' ? ' parcial' : '');
+    let lines = '';
+    for (const it of t.items) lines += '<div class="line"><span class="desc">' + esc(describeItem(it)) + '</span><span class="amt">' + fmt(it.subtotal) + '</span></div>';
+    let costs = '';
+    if (t.flete || t.costoCorte) {
+      const parts = [];
+      if (t.flete) parts.push('Flete ' + fmt(t.flete));
+      if (t.costoCorte) parts.push('Corte ' + fmtNum(t.corteToneladas) + ' ton × ' + fmt(t.cortePrecioTon) + ' = ' + fmt(t.costoCorte));
+      costs = '<div class="line"><span class="desc">' + esc(parts.join(' · ')) + '</span></div>';
+    }
+    const check = selectMode ? '<input type="checkbox" class="sel-check" data-act="select" data-id="' + esc(t.id) + '"' + (selected.has(t.id) ? ' checked' : '') + '>' : '';
+    return '<div class="' + cls + '"><div class="trip-head">' + check +
+      '<div class="trip-main"><div class="empresa">' + esc(t.empresa) +
+      ' <button type="button" class="' + pcls + '" data-act="estado" data-id="' + esc(t.id) + '">' + label + '</button>' +
+      (t.pendingPrice ? '<span class="pending-badge">Precio pendiente</span>' : '') + '</div>' +
+      '<div class="meta">' + fechaLegible(t.fecha) + (t.notas ? ' · ' + esc(t.notas) : '') + '</div></div>' +
+      '<div class="trip-actions"><button type="button" class="link-btn" data-act="edit" data-id="' + esc(t.id) + '">Editar</button>' +
+      '<button type="button" class="link-btn" data-act="del" data-id="' + esc(t.id) + '">Eliminar</button></div></div>' +
+      '<div class="trip-items">' + lines +
+      '<div class="line total"><span>Total facturado</span><span>' + fmt(t.total) + '</span></div>' + costs +
+      '<div class="line"><span class="desc">Utilidad neta</span><span class="amt">' + fmt(t.neto) + '</span></div></div></div>';
+  }
+  function renderTrips() {
+    const list = filteredTrips();
+    const shown = list.slice(Math.max(0, list.length - vf.shown));
+    const hidden = list.length - shown.length;
+    let tons = 0, tot = 0;
+    for (const t of list) { tons += t.corteToneladas; tot += t.total; }
+    $('viajesSummary').textContent = list.length ? fmtNum(list.length) + ' viajes · ' + fmt(tot) + ' facturado · ' + fmtNum(tons) + ' ton' : '';
+    let html = '';
+    if (hidden > 0) html += '<button type="button" class="more-btn" data-act="moreTrips">Ver ' + Math.min(PAGE, hidden) + ' anteriores (' + fmtNum(hidden) + ' más)</button>';
+    if (!list.length) html += '<div class="empty">No hay viajes con estos filtros.</div>';
+    for (const t of shown) html += tripHTML(t);
+    $('tripsList').innerHTML = html;
+    updateBulkBar();
+  }
+  function updateBulkBar() {
+    $('bulkBar').hidden = !selectMode;
+    $('bulkCount').textContent = fmtNum(selected.size) + ' seleccionados';
+    $('vfSelectMode').textContent = selectMode ? 'Salir de selección' : 'Seleccionar varios';
+  }
+  function setEstadoLocal(ids, estado) {
+    const set = new Set(ids);
+    for (const t of trips) if (set.has(t.id)) t.estadoPago = estado;
+  }
+  function cycleEstado(id) {
+    const t = trips.find((x) => x.id === id);
+    if (!t) return;
+    const next = ESTADOS[(ESTADOS.indexOf(t.estadoPago || '') + 1) % ESTADOS.length];
+    setEstadoLocal([id], next);
+    send({ action: 'setEstadoPago', viajeIds: [id], estado: next });
+    renderAll();
+  }
+  function deleteTrip(id) {
+    if (!confirm('¿Eliminar este viaje?')) return;
+    trips = trips.filter((t) => t.id !== id);
+    selected.delete(id);
+    send({ action: 'deleteTrip', viajeId: id });
+    renderAll();
+  }
+
+  $('tripsList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const act = b.dataset.act, id = b.dataset.id;
+    if (act === 'moreTrips') { vf.shown += PAGE; renderTrips(); }
+    else if (act === 'estado') cycleEstado(id);
+    else if (act === 'edit') startEdit(id);
+    else if (act === 'del') deleteTrip(id);
+  });
+  $('tripsList').addEventListener('change', (e) => {
+    const c = e.target.closest('[data-act="select"]');
+    if (!c) return;
+    if (c.checked) selected.add(c.dataset.id); else selected.delete(c.dataset.id);
+    updateBulkBar();
+  });
+
+  // filtros de la lista
+  function resetShownAndRender() { vf.shown = PAGE; renderTrips(); }
+  $('vfEmpresa').addEventListener('change', (e) => { vf.empresa = e.target.value; resetShownAndRender(); });
+  $('vfEstado').addEventListener('change', (e) => { vf.estado = e.target.value; resetShownAndRender(); });
+  $('vfDesde').addEventListener('change', (e) => { vf.desde = e.target.value; resetShownAndRender(); });
+  $('vfHasta').addEventListener('change', (e) => { vf.hasta = e.target.value; resetShownAndRender(); });
+  let qTimer = null;
+  $('vfQ').addEventListener('input', (e) => { clearTimeout(qTimer); const v = e.target.value; qTimer = setTimeout(() => { vf.q = v; resetShownAndRender(); }, 200); });
+
+  // selección múltiple
+  $('vfSelectMode').addEventListener('click', () => { selectMode = !selectMode; selected.clear(); renderTrips(); });
+  $('bulkAll').addEventListener('click', () => { filteredTrips().forEach((t) => selected.add(t.id)); renderTrips(); });
+  $('bulkBar').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-bulk]');
+    if (!b || selected.size === 0) return;
+    const nombre = b.dataset.bulk;
+    const estado = nombre === 'Pendiente' ? '' : nombre;
+    const ids = Array.from(selected);
+    setEstadoLocal(ids, estado);
+    send({ action: 'setEstadoPago', viajeIds: ids, estado: estado });
+    selected.clear();
+    renderAll();
+  });
+
+  // ====== Pagos ======
+  function renderPayments() {
+    const list = payments.filter((p) => !pf.empresa || p.empresa === pf.empresa);
+    const shown = list.slice(Math.max(0, list.length - pf.shown));
+    const hidden = list.length - shown.length;
+    let html = '';
+    if (hidden > 0) html += '<button type="button" class="more-btn" data-act="morePays">Ver ' + Math.min(PAGE, hidden) + ' anteriores (' + fmtNum(hidden) + ' más)</button>';
+    if (!list.length) html += '<div class="empty">Aún no hay pagos registrados.</div>';
+    for (const p of shown) {
+      html += '<div class="row-card"><div><div class="empresa">' + esc(p.empresa) + '</div><div class="meta">' + fechaLegible(p.fecha) + (p.notas ? ' · ' + esc(p.notas) : '') + '</div><div class="monto">' + fmt(p.monto) + '</div></div>' +
+        '<button type="button" class="link-btn" data-act="delPay" data-id="' + esc(p.pagoId) + '">Eliminar</button></div>';
+    }
+    $('paymentsList').innerHTML = html;
+  }
+  $('pfEmpresa').addEventListener('change', (e) => { pf.empresa = e.target.value; pf.shown = PAGE; renderPayments(); });
+  $('paymentsList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    if (b.dataset.act === 'morePays') { pf.shown += PAGE; renderPayments(); }
+    else if (b.dataset.act === 'delPay') {
+      if (!confirm('¿Eliminar este pago?')) return;
+      payments = payments.filter((p) => p.pagoId !== b.dataset.id);
+      send({ action: 'deletePayment', pagoId: b.dataset.id });
+      renderAll();
+    }
+  });
+
+  // ====== Rentabilidad ======
+  function kpi(label, value, alt) { return '<div class="kpi' + (alt ? ' alt' : '') + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>'; }
+  function renderRent() {
+    let ing = 0, fl = 0, co = 0;
+    for (const t of trips) { ing += t.total; fl += t.flete; co += t.costoCorte; }
+    $('rentGrid').innerHTML = kpi('Ingresos', fmt(ing), true) + kpi('Fletes', fmt(fl), true) + kpi('Costo de corte', fmt(co), true) + kpi('Utilidad neta', fmt(ing - fl - co), false);
+  }
+
+  // ====== Corte: reporte + abonos ======
+  function renderCorte() {
+    const tarifa = parseFloat($('corteTarifa').value) || 0;
+    let tons = 0, costo = 0, rows = '';
+    for (const t of trips) {
+      if (t.corteToneladas > 0) {
+        tons += t.corteToneladas; costo += t.costoCorte;
+        rows += '<tr><td>' + fechaLegible(t.fecha) + '</td><td class="num">' + fmtNum(t.corteToneladas) + '</td></tr>';
+      }
+    }
+    $('corteReportBody').innerHTML = rows || '<tr><td colspan="2" class="empty">Aún no hay toneladas registradas.</td></tr>';
+    $('corteReportFoot').innerHTML = rows ? '<tr><td>Total</td><td class="num">' + fmtNum(tons) + '</td></tr>' : '';
+    const costoTotal = tarifa > 0 ? tons * tarifa : costo;
+    let abonado = 0;
+    for (const a of abonos) abonado += a.monto;
+    $('corteSaldo').innerHTML = kpi('Toneladas', fmtNum(tons), true) + kpi('Costo total', fmt(costoTotal), true) + kpi('Abonado', fmt(abonado), true) + kpi('Pendiente por pagar', fmt(costoTotal - abonado), false);
+
+    const shown = abonos.slice(Math.max(0, abonos.length - af.shown));
+    const hidden = abonos.length - shown.length;
+    let html = '';
+    if (hidden > 0) html += '<button type="button" class="more-btn" data-act="moreAbonos">Ver ' + Math.min(PAGE, hidden) + ' anteriores (' + fmtNum(hidden) + ' más)</button>';
+    if (!abonos.length) html += '<div class="empty">Aún no hay abonos registrados.</div>';
+    for (const a of shown) {
+      html += '<div class="row-card"><div><div class="empresa">' + fechaLegible(a.fecha) + '</div><div class="meta">' + esc(a.notas) + '</div><div class="monto">' + fmt(a.monto) + '</div></div>' +
+        '<button type="button" class="link-btn" data-act="delAbono" data-id="' + esc(a.abonoId) + '">Eliminar</button></div>';
+    }
+    $('abonosList').innerHTML = html;
+  }
+  let tarifaTimer = null;
+  $('corteTarifa').addEventListener('input', () => { clearTimeout(tarifaTimer); tarifaTimer = setTimeout(renderCorte, 150); });
+  $('abonosList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    if (b.dataset.act === 'moreAbonos') { af.shown += PAGE; renderCorte(); }
+    else if (b.dataset.act === 'delAbono') {
+      if (!confirm('¿Eliminar este abono?')) return;
+      abonos = abonos.filter((a) => a.abonoId !== b.dataset.id);
+      send({ action: 'deleteAbonoCorte', abonoId: b.dataset.id });
+      renderAll();
+    }
+  });
+
+  // ====== Resumen por empresa (sección de Registrar) ======
+  function aggByEmpresa(ts, ps, valFn) {
+    const m = new Map();
+    const get = (name) => { let e = m.get(name); if (!e) { e = { name: name, viajes: 0, fact: 0, pag: 0, tons: 0 }; m.set(name, e); } return e; };
+    for (const t of ts) { const e = get(t.empresa); e.viajes++; e.fact += valFn ? valFn(t) : t.total; e.tons += t.corteToneladas; }
+    for (const p of ps) get(p.empresa).pag += p.monto;
+    return Array.from(m.values());
+  }
+  function renderEmpresas() {
+    const rows = aggByEmpresa(trips, payments).sort((a, b) => (b.fact - b.pag) - (a.fact - a.pag));
+    let html = '';
+    for (const r of rows) html += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmt(r.fact) + '</td><td class="num">' + fmt(r.pag) + '</td><td class="num">' + fmt(r.fact - r.pag) + '</td></tr>';
+    $('empresasBody').innerHTML = html || '<tr><td colspan="5" class="empty">Aún no hay empresas.</td></tr>';
+  }
+
+  // ====== Formulario: registrar / editar viaje ======
+  function newItem(tipo) { return { uid: ++itemSeq, tipo: tipo || 'Rolo', cantidad: '', precio: '', medida: '' }; }
+  function renderItems() {
+    let html = '';
+    for (const it of formItems) {
+      const rolo = it.tipo === 'Rolo';
+      html += '<div class="item-row" data-uid="' + it.uid + '">' +
+        '<div class="type-toggle"><button type="button" data-act="tipo" data-tipo="Rolo" class="' + (rolo ? 'active' : '') + '">Rolo</button><button type="button" data-act="tipo" data-tipo="Alfarda" class="' + (rolo ? '' : 'active') + '">Alfarda</button></div>' +
+        '<div class="item-fields"><div><label>' + (rolo ? 'Toneladas' : 'Unidades') + '</label><input type="number" data-field="cantidad" step="any" min="0" value="' + esc(it.cantidad) + '"></div>' +
+        '<div><label>' + (rolo ? 'Precio por tonelada' : 'Precio por unidad') + ' (opcional)</label><input type="number" data-field="precio" step="any" min="0" placeholder="Pendiente" value="' + esc(it.precio) + '"></div></div>' +
+        (rolo ? '' : '<div><label>Medida de la unidad</label><input type="text" data-field="medida" placeholder="Ej: 3m x 4 pulg" value="' + esc(it.medida) + '"></div>') +
+        '<div class="item-foot"><span class="subtotal">' + fmt((parseFloat(it.cantidad) || 0) * (parseFloat(it.precio) || 0)) + '</span><button type="button" class="link-btn" data-act="remove">Quitar ítem</button></div></div>';
+    }
+    $('itemsList').innerHTML = html;
+  }
+  function updateTotals() {
+    let total = 0;
+    for (const it of formItems) total += (parseFloat(it.cantidad) || 0) * (parseFloat(it.precio) || 0);
+    $('totalPreview').textContent = fmt(total);
+    $('corteTotalPreview').textContent = fmt((parseFloat($('corteToneladas').value) || 0) * (parseFloat($('cortePrecioTon').value) || 0));
+  }
+  $('itemsList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const row = b.closest('.item-row');
+    const it = formItems.find((x) => x.uid === +row.dataset.uid);
+    if (!it) return;
+    if (b.dataset.act === 'tipo') { it.tipo = b.dataset.tipo; renderItems(); updateTotals(); }
+    else if (b.dataset.act === 'remove') {
+      if (formItems.length > 1) formItems = formItems.filter((x) => x !== it); else { it.cantidad = ''; it.precio = ''; it.medida = ''; }
+      renderItems(); updateTotals();
+    }
+  });
+  $('itemsList').addEventListener('input', (e) => {
+    const f = e.target.dataset.field;
+    if (!f) return;
+    const row = e.target.closest('.item-row');
+    const it = formItems.find((x) => x.uid === +row.dataset.uid);
+    if (!it) return;
+    it[f] = e.target.value;
+    row.querySelector('.subtotal').textContent = fmt((parseFloat(it.cantidad) || 0) * (parseFloat(it.precio) || 0));
+    updateTotals();
+  });
+  $('addItemBtn').addEventListener('click', () => { formItems.push(newItem('Rolo')); renderItems(); });
+  ['corteToneladas', 'cortePrecioTon'].forEach((id) => $(id).addEventListener('input', updateTotals));
+
+  function resetTripForm() {
+    formItems = [newItem('Rolo')];
+    $('flete').value = ''; $('corteToneladas').value = ''; $('cortePrecioTon').value = ''; $('notas').value = '';
+    $('tripMsg').hidden = true;
+    editingId = null;
+    $('submitBtn').textContent = 'Registrar viaje';
+    $('cancelEditBtn').hidden = true;
+    renderItems(); updateTotals();
+  }
+  $('cancelEditBtn').addEventListener('click', resetTripForm);
+
+  function openSection(key) {
+    openSecs[key] = true;
+    const sec = document.querySelector('[data-sec="' + key + '"]');
+    sec.classList.add('open');
+    sec.querySelector('.sec-body').hidden = false;
+    if (sectionRenderers[key]) sectionRenderers[key]();
+  }
+  function startEdit(id) {
+    const t = trips.find((x) => x.id === id);
+    if (!t) return;
+    editingId = id;
+    openSection('viaje');
+    renderSelects(true);
+    $('fecha').value = toDateOnly(t.fecha);
+    if (companies.indexOf(t.empresa) !== -1) $('empresa').value = t.empresa;
+    $('notas').value = t.notas || '';
+    $('flete').value = t.flete || '';
+    $('corteToneladas').value = t.corteToneladas || '';
+    $('cortePrecioTon').value = t.cortePrecioTon || '';
+    formItems = t.items.map((it) => ({ uid: ++itemSeq, tipo: it.tipo, cantidad: it.cantidad ? String(it.cantidad) : '', precio: it.precioUnitario ? String(it.precioUnitario) : '', medida: it.medida || '' }));
+    renderItems(); updateTotals();
+    $('submitBtn').textContent = 'Guardar cambios';
+    $('cancelEditBtn').hidden = false;
+    $('tripForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function insertSorted(arr, obj) { arr.push(obj); arr.sort(cmpFecha); }
+
+  $('tripForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('tripMsg');
+    const empresa = $('empresa').value;
+    if (!empresa) { msg.textContent = 'Elige o agrega una empresa primero.'; msg.hidden = false; return; }
+    const items = formItems.map((i) => {
+      const cantidad = parseFloat(i.cantidad) || 0, precio = parseFloat(i.precio) || 0;
+      return { tipo: i.tipo, cantidad: cantidad, medida: i.tipo === 'Alfarda' ? (i.medida || '').trim() : '', precioUnitario: precio, subtotal: cantidad * precio };
+    }).filter((i) => i.cantidad > 0);
+    if (!items.length) { msg.textContent = 'Agrega al menos un ítem con cantidad.'; msg.hidden = false; return; }
+    msg.hidden = true;
+
+    const flete = parseFloat($('flete').value) || 0;
+    const corteToneladas = parseFloat($('corteToneladas').value) || 0;
+    const cortePrecioTon = parseFloat($('cortePrecioTon').value) || 0;
+    const isEdit = !!editingId;
+    const id = editingId || uuid();
+    const existing = isEdit ? trips.find((t) => t.id === id) : null;
+    const data = {
+      id: id, fecha: $('fecha').value, empresa: empresa, notas: $('notas').value.trim(),
+      flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: corteToneladas * cortePrecioTon,
+      estadoPago: existing ? existing.estadoPago : '', items: items
+    };
+    const t = normTrip(data);
+    if (isEdit) trips = trips.filter((x) => x.id !== id);
+    insertSorted(trips, t);
+    send({ action: 'saveTrip', isEdit: isEdit, viajeId: id, fecha: data.fecha, empresa: empresa, notas: data.notas, items: items, flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: data.costoCorte, estadoPago: data.estadoPago });
+    resetTripForm(); // se mantienen fecha y empresa para registrar el siguiente viaje más rápido
+    renderAll();
+  });
+
+  // ====== Empresas nuevas ======
+  function addCompany() {
+    const inp = $('nuevaEmpresa');
+    const name = inp.value.trim();
+    if (!name) return;
+    const exists = companies.find((c) => c.toLowerCase() === name.toLowerCase());
+    const use = exists || name;
+    if (!exists) {
+      companies.push(name);
+      companies.sort((a, b) => a.localeCompare(b, 'es'));
+      send({ action: 'addCompany', nombre: name });
+    }
+    inp.value = '';
+    renderSelects(true);
+    $('empresa').value = use;
+    renderAll();
+  }
+  $('addCompanyBtn').addEventListener('click', addCompany);
+  $('nuevaEmpresa').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCompany(); } });
+
+  // ====== Registrar pago / abono ======
+  $('paymentForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('pagoMsg');
+    const empresa = $('pagoEmpresa').value;
+    const monto = parseFloat($('pagoMonto').value) || 0;
+    if (!empresa || monto <= 0) { msg.textContent = 'Elige una empresa e ingresa un monto mayor a cero.'; msg.hidden = false; return; }
+    msg.hidden = true;
+    const p = { pagoId: uuid(), fecha: $('pagoFecha').value, empresa: empresa, monto: monto, notas: $('pagoNotas').value.trim() };
+    insertSorted(payments, normPay(p));
+    send({ action: 'addPayment', pagoId: p.pagoId, fecha: p.fecha, empresa: empresa, monto: monto, notas: p.notas });
+    $('pagoMonto').value = ''; $('pagoNotas').value = '';
+    renderAll();
+  });
+  $('abonoForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('abonoMsg');
+    const monto = parseFloat($('abonoMonto').value) || 0;
+    if (monto <= 0) { msg.textContent = 'Ingresa un monto mayor a cero.'; msg.hidden = false; return; }
+    msg.hidden = true;
+    const a = { abonoId: uuid(), fecha: $('abonoFecha').value, monto: monto, notas: $('abonoNotas').value.trim() };
+    insertSorted(abonos, normAbono(a));
+    send({ action: 'addAbonoCorte', abonoId: a.abonoId, fecha: a.fecha, monto: monto, notas: a.notas });
+    $('abonoMonto').value = ''; $('abonoNotas').value = '';
+    renderAll();
+  });
+
+  // ====== Resumen ejecutivo ======
+  function renderResumen() {
+    const tipo = rf.tipo, estado = rf.estado;
+    const ts = trips.filter((t) => {
+      if (rf.empresa && t.empresa !== rf.empresa) return false;
+      if (estado !== 'Todos' && estadoNombre(t.estadoPago) !== estado) return false;
+      if (tipo !== 'Todos' && !t.items.some((i) => i.tipo === tipo)) return false;
+      if (rf.desde && t.fecha < rf.desde) return false;
+      if (rf.hasta && t.fecha > rf.hasta) return false;
+      return true;
+    });
+    const val = (t) => (tipo === 'Todos' ? t.total : t.items.reduce((s, i) => (i.tipo === tipo ? s + i.subtotal : s), 0));
+    const ps = payments.filter((p) => (!rf.empresa || p.empresa === rf.empresa) && (!rf.desde || p.fecha >= rf.desde) && (!rf.hasta || p.fecha <= rf.hasta));
+    const as = abonos.filter((a) => (!rf.desde || a.fecha >= rf.desde) && (!rf.hasta || a.fecha <= rf.hasta));
+
+    let ing = 0, fl = 0, co = 0, tons = 0, pag = 0, abonado = 0;
+    for (const t of ts) { ing += val(t); fl += t.flete; co += t.costoCorte; tons += t.corteToneladas; }
+    for (const p of ps) pag += p.monto;
+    for (const a of as) abonado += a.monto;
+
+    $('kpiMain').innerHTML = kpi('Ingresos totales', fmt(ing), false) + kpi('Pendiente por cobrar', fmt(ing - pag), false) + kpi('Utilidad neta', fmt(ing - fl - co), false);
+    $('kpiSecondary').innerHTML = kpi('Toneladas totales', fmtNum(tons) + ' ton', true) + kpi('Viajes', fmtNum(ts.length), true) + kpi('Flete por tonelada', tons > 0 ? fmt(fl / tons) : '$0', true) + kpi('Corte por tonelada', tons > 0 ? fmt(co / tons) : '$0', true);
+    $('kpiCosts').innerHTML = kpi('Fletes', fmt(fl), true) + kpi('Costo de corte', fmt(co), true) + kpi('Abonado al corte', fmt(abonado), true) + kpi('Pendiente del corte', fmt(co - abonado), true);
+
+    const rows = aggByEmpresa(ts, ps, val).sort((a, b) => b.fact - a.fact);
+
+    // barras: las 10 empresas con más ingresos y el resto agrupado
+    let bars = '';
+    const withFact = rows.filter((r) => r.fact > 0);
+    if (!withFact.length) bars = '<div class="empty">Sin datos para este filtro.</div>';
+    else {
+      const top = withFact.slice(0, 10);
+      const rest = withFact.slice(10);
+      if (rest.length) top.push({ name: 'Otras (' + rest.length + ')', fact: rest.reduce((s, r) => s + r.fact, 0) });
+      const max = Math.max.apply(null, top.map((r) => r.fact).concat([1]));
+      for (const r of top) bars += '<div class="hbar"><div class="hbar-label" title="' + esc(r.name) + '">' + esc(r.name) + '</div><div class="hbar-track"><div class="hbar-fill" style="width:' + Math.max((r.fact / max) * 100, 3) + '%"><span>' + fmt(r.fact) + '</span></div></div></div>';
+    }
+    $('rfBars').innerHTML = bars;
+
+    let tbl = '';
+    for (const r of rows) {
+      const pend = r.fact - r.pag;
+      tbl += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmtNum(r.tons) + '</td><td class="num">' + fmt(r.fact) + '</td><td class="num">' + fmt(r.pag) + '</td><td class="num">' + fmt(pend) + '</td><td class="num">' + (r.fact > 0 ? Math.round((r.pag / r.fact) * 100) : 0) + '%</td></tr>';
+    }
+    $('rfTable').innerHTML = tbl || '<tr><td colspan="7" class="empty">Sin datos para este filtro.</td></tr>';
+
+    let rec = '';
+    for (let i = ts.length - 1, n = 0; i >= 0 && n < 15; i--, n++) {
+      const t = ts[i];
+      const est = estadoNombre(t.estadoPago);
+      const tipos = Array.from(new Set(t.items.map((x) => x.tipo))).join(' + ');
+      rec += '<tr><td>' + fechaLegible(t.fecha) + '</td><td>' + esc(t.empresa) + '</td><td>' + esc(tipos) + '</td><td class="num">' + fmt(val(t)) + '</td><td><span class="dot ' + est.toLowerCase() + '"></span>' + est + '</td></tr>';
+    }
+    $('rfRecent').innerHTML = rec || '<tr><td colspan="5" class="empty">Sin viajes para este filtro.</td></tr>';
+  }
+  $('rfEmpresa').addEventListener('change', (e) => { rf.empresa = e.target.value; renderResumen(); });
+  $('rfDesde').addEventListener('change', (e) => { rf.desde = e.target.value; renderResumen(); });
+  $('rfHasta').addEventListener('change', (e) => { rf.hasta = e.target.value; renderResumen(); });
+  function chipGroup(id, key) {
+    $(id).addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-val]');
+      if (!b) return;
+      rf[key] = b.dataset.val;
+      Array.prototype.forEach.call($(id).children, (c) => c.classList.toggle('active', c === b));
+      renderResumen();
+    });
+  }
+  chipGroup('rfTipo', 'tipo');
+  chipGroup('rfEstado', 'estado');
+  $('rfClear').addEventListener('click', () => {
+    rf.empresa = ''; rf.tipo = 'Todos'; rf.estado = 'Todos'; rf.desde = ''; rf.hasta = '';
+    $('rfEmpresa').value = ''; $('rfDesde').value = ''; $('rfHasta').value = '';
+    ['rfTipo', 'rfEstado'].forEach((id) => Array.prototype.forEach.call($(id).children, (c, i) => c.classList.toggle('active', i === 0)));
+    renderResumen();
+  });
+
+  // ====== Navegación ======
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-toggle]');
+    if (t) {
+      const key = t.dataset.toggle;
+      const sec = document.querySelector('[data-sec="' + key + '"]');
+      const body = sec.querySelector('.sec-body');
+      const willOpen = body.hidden;
+      openSecs[key] = willOpen;
+      body.hidden = !willOpen;
+      sec.classList.toggle('open', willOpen);
+      if (willOpen && sectionRenderers[key]) sectionRenderers[key]();
+      return;
+    }
+    const tab = e.target.closest('.tab-btn');
+    if (tab) {
+      view = tab.dataset.view;
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === tab));
+      $('viewRegistro').hidden = view !== 'registro';
+      $('viewResumen').hidden = view !== 'resumen';
+      window.scrollTo(0, 0);
+      renderAll();
+    }
+  });
+  $('refreshBtn').addEventListener('click', () => loadData(true));
+
+  // ====== Inicio ======
+  $('fecha').value = todayISO(); $('pagoFecha').value = todayISO(); $('abonoFecha').value = todayISO();
+  formItems = [newItem('Rolo')];
+  renderItems(); updateTotals();
+  hasCache = loadCache();
+  renderSelects(true);
+  renderAll();
+  loadData(false);
+})();
+</script>
+</body>
+</html>
