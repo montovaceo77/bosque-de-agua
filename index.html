@@ -199,6 +199,10 @@
           <div><label for="flete">Flete (opcional)</label><input type="number" id="flete" step="any" min="0" placeholder="0"></div>
           <div></div>
         </div>
+        <div class="row two">
+          <div><label for="gastosVarios">Gastos varios (opcional)</label><input type="number" id="gastosVarios" step="any" min="0" placeholder="0"></div>
+          <div><label for="gastosNota">Nota del gasto</label><input type="text" id="gastosNota" placeholder="Ej: peaje, ayudante"></div>
+        </div>
         <div class="corte-block">
           <label>Costo de corte (se paga por tonelada, sea Rolo o Alfarda)</label>
           <div class="row two" style="margin-bottom:8px;">
@@ -457,12 +461,12 @@
   function normTrip(t) {
     const items = t.items || [];
     const total = items.reduce((s, i) => s + (+i.subtotal || 0), 0);
-    const flete = +t.flete || 0, costoCorte = +t.costoCorte || 0;
+    const flete = +t.flete || 0, costoCorte = +t.costoCorte || 0, gastosVarios = +t.gastosVarios || 0;
     return {
       id: String(t.id), fecha: toDateOnly(t.fecha), empresa: t.empresa || '', notas: t.notas || '',
-      flete: flete, corteToneladas: +t.corteToneladas || 0, cortePrecioTon: +t.cortePrecioTon || 0, costoCorte: costoCorte,
+      flete: flete, corteToneladas: +t.corteToneladas || 0, cortePrecioTon: +t.cortePrecioTon || 0, costoCorte: costoCorte, gastosVarios: gastosVarios, gastosNota: t.gastosNota || '',
       estadoPago: t.estadoPago || '', items: items,
-      total: total, neto: total - flete - costoCorte,
+      total: total, neto: total - flete - costoCorte - gastosVarios,
       pendingPrice: items.some((i) => !i.precioUnitario)
     };
   }
@@ -636,9 +640,10 @@
     let lines = '';
     for (const it of t.items) lines += '<div class="line"><span class="desc">' + esc(describeItem(it)) + '</span><span class="amt">' + fmt(it.subtotal) + '</span></div>';
     let costs = '';
-    if (t.flete || t.costoCorte) {
+    if (t.flete || t.costoCorte || t.gastosVarios) {
       const parts = [];
       if (t.flete) parts.push('Flete ' + fmt(t.flete));
+      if (t.gastosVarios) parts.push('Gastos ' + fmt(t.gastosVarios) + (t.gastosNota ? ' (' + t.gastosNota + ')' : ''));
       if (t.costoCorte) parts.push('Corte ' + fmtNum(t.corteToneladas) + ' ton × ' + fmt(t.cortePrecioTon) + ' = ' + fmt(t.costoCorte));
       costs = '<div class="line"><span class="desc">' + esc(parts.join(' · ')) + '</span></div>';
     }
@@ -763,9 +768,9 @@
   // ====== Rentabilidad ======
   function kpi(label, value, alt) { return '<div class="kpi' + (alt ? ' alt' : '') + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>'; }
   function renderRent() {
-    let ing = 0, fl = 0, co = 0;
-    for (const t of trips) { ing += t.total; fl += t.flete; co += t.costoCorte; }
-    $('rentGrid').innerHTML = kpi('Ingresos', fmt(ing), true) + kpi('Fletes', fmt(fl), true) + kpi('Costo de corte', fmt(co), true) + kpi('Utilidad neta', fmt(ing - fl - co), false);
+    let ing = 0, fl = 0, gv = 0, co = 0;
+    for (const t of trips) { ing += t.total; fl += t.flete; gv += t.gastosVarios; co += t.costoCorte; }
+    $('rentGrid').innerHTML = kpi('Ingresos', fmt(ing), true) + kpi('Fletes', fmt(fl), true) + kpi('Gastos varios', fmt(gv), true) + kpi('Costo de corte', fmt(co), true) + kpi('Utilidad neta', fmt(ing - fl - gv - co), false);
   }
 
   // ====== Corte: reporte + abonos ======
@@ -873,7 +878,7 @@
 
   function resetTripForm() {
     formItems = [newItem('Rolo')];
-    $('flete').value = ''; $('corteToneladas').value = ''; $('cortePrecioTon').value = ''; $('notas').value = '';
+    $('flete').value = ''; $('gastosVarios').value = ''; $('gastosNota').value = ''; $('corteToneladas').value = ''; $('cortePrecioTon').value = ''; $('notas').value = '';
     $('tripMsg').hidden = true;
     editingId = null;
     $('submitBtn').textContent = 'Registrar viaje';
@@ -899,6 +904,8 @@
     if (companies.indexOf(t.empresa) !== -1) $('empresa').value = t.empresa;
     $('notas').value = t.notas || '';
     $('flete').value = t.flete || '';
+    $('gastosVarios').value = t.gastosVarios || '';
+    $('gastosNota').value = t.gastosNota || '';
     $('corteToneladas').value = t.corteToneladas || '';
     $('cortePrecioTon').value = t.cortePrecioTon || '';
     formItems = t.items.map((it) => ({ uid: ++itemSeq, tipo: it.tipo, cantidad: it.cantidad ? String(it.cantidad) : '', precio: it.precioUnitario ? String(it.precioUnitario) : '', medida: it.medida || '' }));
@@ -923,6 +930,8 @@
     msg.hidden = true;
 
     const flete = parseFloat($('flete').value) || 0;
+    const gastosVarios = parseFloat($('gastosVarios').value) || 0;
+    const gastosNota = $('gastosNota').value.trim();
     const corteToneladas = parseFloat($('corteToneladas').value) || 0;
     const cortePrecioTon = parseFloat($('cortePrecioTon').value) || 0;
     const isEdit = !!editingId;
@@ -930,13 +939,13 @@
     const existing = isEdit ? trips.find((t) => t.id === id) : null;
     const data = {
       id: id, fecha: $('fecha').value, empresa: empresa, notas: $('notas').value.trim(),
-      flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: corteToneladas * cortePrecioTon,
+      flete: flete, gastosVarios: gastosVarios, gastosNota: gastosNota, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: corteToneladas * cortePrecioTon,
       estadoPago: existing ? existing.estadoPago : '', items: items
     };
     const t = normTrip(data);
     if (isEdit) trips = trips.filter((x) => x.id !== id);
     insertSorted(trips, t);
-    send({ action: 'saveTrip', isEdit: isEdit, viajeId: id, fecha: data.fecha, empresa: empresa, notas: data.notas, items: items, flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: data.costoCorte, estadoPago: data.estadoPago });
+    send({ action: 'saveTrip', isEdit: isEdit, viajeId: id, fecha: data.fecha, empresa: empresa, notas: data.notas, items: items, flete: flete, gastosVarios: gastosVarios, gastosNota: gastosNota, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: data.costoCorte, estadoPago: data.estadoPago });
     resetTripForm(); // se mantienen fecha y empresa para registrar el siguiente viaje más rápido
     renderAll();
   });
@@ -1003,14 +1012,14 @@
     const ps = payments.filter((p) => (!rf.empresa || p.empresa === rf.empresa) && (!rf.desde || p.fecha >= rf.desde) && (!rf.hasta || p.fecha <= rf.hasta));
     const as = abonos.filter((a) => (!rf.desde || a.fecha >= rf.desde) && (!rf.hasta || a.fecha <= rf.hasta));
 
-    let ing = 0, fl = 0, co = 0, tons = 0, pag = 0, abonado = 0;
-    for (const t of ts) { ing += val(t); fl += t.flete; co += t.costoCorte; tons += t.corteToneladas; }
+    let ing = 0, fl = 0, co = 0, gv = 0, tons = 0, pag = 0, abonado = 0;
+    for (const t of ts) { ing += val(t); fl += t.flete; gv += t.gastosVarios; co += t.costoCorte; tons += t.corteToneladas; }
     for (const p of ps) pag += p.monto;
     for (const a of as) abonado += a.monto;
 
-    $('kpiMain').innerHTML = kpi('Ingresos totales', fmt(ing), false) + kpi('Pendiente por cobrar', fmt(ing - pag), false) + kpi('Utilidad neta', fmt(ing - fl - co), false);
+    $('kpiMain').innerHTML = kpi('Ingresos totales', fmt(ing), false) + kpi('Pendiente por cobrar', fmt(ing - pag), false) + kpi('Utilidad neta', fmt(ing - fl - gv - co), false);
     $('kpiSecondary').innerHTML = kpi('Toneladas totales', fmtNum(tons) + ' ton', true) + kpi('Viajes', fmtNum(ts.length), true) + kpi('Flete por tonelada', tons > 0 ? fmt(fl / tons) : '$0', true) + kpi('Corte por tonelada', tons > 0 ? fmt(co / tons) : '$0', true);
-    $('kpiCosts').innerHTML = kpi('Fletes', fmt(fl), true) + kpi('Costo de corte', fmt(co), true) + kpi('Abonado al corte', fmt(abonado), true) + kpi('Pendiente del corte', fmt(co - abonado), true);
+    $('kpiCosts').innerHTML = kpi('Fletes', fmt(fl), true) + kpi('Gastos varios', fmt(gv), true) + kpi('Costo de corte', fmt(co), true) + kpi('Abonado al corte', fmt(abonado), true) + kpi('Pendiente del corte', fmt(co - abonado), true);
 
     const rows = aggByEmpresa(ts, ps, val).sort((a, b) => b.fact - a.fact);
 
