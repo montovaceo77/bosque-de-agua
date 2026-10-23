@@ -199,10 +199,6 @@
           <div><label for="flete">Flete (opcional)</label><input type="number" id="flete" step="any" min="0" placeholder="0"></div>
           <div></div>
         </div>
-        <div class="row two">
-          <div><label for="gastosVarios">Gastos varios (opcional)</label><input type="number" id="gastosVarios" step="any" min="0" placeholder="0"></div>
-          <div><label for="gastosNota">Nota del gasto</label><input type="text" id="gastosNota" placeholder="Ej: peaje, ayudante"></div>
-        </div>
         <div class="corte-block">
           <label>Costo de corte (se paga por tonelada, sea Rolo o Alfarda)</label>
           <div class="row two" style="margin-bottom:8px;">
@@ -257,6 +253,24 @@
   </div>
 
   <!-- Viajes despachados -->
+  <!-- Gastos varios -->
+  <div class="card sec" data-sec="gastos">
+    <button type="button" class="sec-head" data-toggle="gastos"><h2>Gastos varios</h2><span class="right"><span class="count" id="cntGastos">0</span><span class="chev">▾</span></span></button>
+    <div class="sec-body" hidden>
+      <form id="gastoForm" autocomplete="off">
+        <div class="row two">
+          <div><label for="gastoFecha">Fecha</label><input type="date" id="gastoFecha" required></div>
+          <div><label for="gastoMonto">Monto</label><input type="number" id="gastoMonto" step="any" min="0" placeholder="0"></div>
+        </div>
+        <div class="row"><div><label for="gastoNotas">Nota</label><input type="text" id="gastoNotas" placeholder="Ej: peaje, ayudante, combustible..."></div></div>
+        <p class="form-msg" id="gastoMsg" hidden></p>
+        <button type="submit" class="secondary">Registrar gasto</button>
+      </form>
+      <div class="kpi-grid" id="gastosTotal"></div>
+      <div id="gastosList"></div>
+    </div>
+  </div>
+
   <div class="card sec" data-sec="viajes">
     <button type="button" class="sec-head" data-toggle="viajes"><h2>Viajes despachados</h2><span class="right"><span class="count" id="cntViajes">0</span><span class="chev">▾</span></span></button>
     <div class="sec-body" hidden>
@@ -443,7 +457,7 @@
   const cmpFecha = (a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0);
 
   // ====== Estado ======
-  let trips = [], companies = [], payments = [], abonos = [];
+  let trips = [], companies = [], payments = [], abonos = [], gastos = [];
   let pending = 0, mutations = 0, needsReload = false, hadError = false, hasCache = false;
   let loadingText = '';
   let sendChain = Promise.resolve();
@@ -453,6 +467,7 @@
   const vf = { empresa: '', estado: '', q: '', desde: '', hasta: '', shown: PAGE };
   const pf = { empresa: '', shown: PAGE };
   const af = { shown: PAGE };
+  const gf = { shown: PAGE };
   let selectMode = false;
   const selected = new Set();
   const rf = { empresa: '', tipo: 'Todos', estado: 'Todos', desde: '', hasta: '' };
@@ -461,16 +476,17 @@
   function normTrip(t) {
     const items = t.items || [];
     const total = items.reduce((s, i) => s + (+i.subtotal || 0), 0);
-    const flete = +t.flete || 0, costoCorte = +t.costoCorte || 0, gastosVarios = +t.gastosVarios || 0;
+    const flete = +t.flete || 0, costoCorte = +t.costoCorte || 0;
     return {
       id: String(t.id), fecha: toDateOnly(t.fecha), empresa: t.empresa || '', notas: t.notas || '',
-      flete: flete, corteToneladas: +t.corteToneladas || 0, cortePrecioTon: +t.cortePrecioTon || 0, costoCorte: costoCorte, gastosVarios: gastosVarios, gastosNota: t.gastosNota || '',
+      flete: flete, corteToneladas: +t.corteToneladas || 0, cortePrecioTon: +t.cortePrecioTon || 0, costoCorte: costoCorte,
       estadoPago: t.estadoPago || '', items: items,
-      total: total, neto: total - flete - costoCorte - gastosVarios,
+      total: total, neto: total - flete - costoCorte,
       pendingPrice: items.some((i) => !i.precioUnitario)
     };
   }
   const normPay = (p) => ({ pagoId: String(p.pagoId), fecha: toDateOnly(p.fecha), empresa: p.empresa || '', monto: +p.monto || 0, notas: p.notas || '' });
+  const normGasto = (g) => ({ gastoId: String(g.gastoId), fecha: toDateOnly(g.fecha), monto: +g.monto || 0, notas: g.notas || '' });
   const normAbono = (a) => ({ abonoId: String(a.abonoId), fecha: toDateOnly(a.fecha), monto: +a.monto || 0, notas: a.notas || '' });
 
   function applyServerData(d) {
@@ -478,6 +494,7 @@
     companies = (d.companies || []).map(String).sort((a, b) => a.localeCompare(b, 'es'));
     payments = (d.payments || []).map(normPay).sort(cmpFecha);
     abonos = (d.abonosCorte || []).map(normAbono).sort(cmpFecha);
+    gastos = (d.gastosVarios || []).map(normGasto).sort(cmpFecha);
     const ids = new Set(trips.map((t) => t.id));
     Array.from(selected).forEach((id) => { if (!ids.has(id)) selected.delete(id); });
     renderAll();
@@ -485,14 +502,14 @@
 
   // ====== Caché local ======
   let cacheTimer = null;
-  function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ trips: trips, companies: companies, payments: payments, abonos: abonos })); } catch (e) {} }
+  function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ trips: trips, companies: companies, payments: payments, abonos: abonos, gastos: gastos })); } catch (e) {} }
   function scheduleSaveCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(saveCache, 800); }
   function loadCache() {
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return false;
       const d = JSON.parse(raw);
-      trips = d.trips || []; companies = d.companies || []; payments = d.payments || []; abonos = d.abonos || [];
+      trips = d.trips || []; companies = d.companies || []; payments = d.payments || []; abonos = d.abonos || []; gastos = d.gastos || [];
       return true;
     } catch (e) { return false; }
   }
@@ -569,6 +586,7 @@
     pagos: () => renderPayments(),
     rent: () => renderRent(),
     corte: () => renderCorte(),
+    gastos: () => renderGastos(),
     empresas: () => renderEmpresas()
   };
   function doRender() {
@@ -577,6 +595,7 @@
     $('cntViajes').textContent = fmtNum(trips.length);
     $('cntPagos').textContent = fmtNum(payments.length);
     $('cntAbonos').textContent = fmtNum(abonos.length);
+    $('cntGastos').textContent = fmtNum(gastos.length);
     if (view === 'registro') {
       Object.keys(sectionRenderers).forEach((k) => { if (openSecs[k]) sectionRenderers[k](); });
     } else {
@@ -640,10 +659,9 @@
     let lines = '';
     for (const it of t.items) lines += '<div class="line"><span class="desc">' + esc(describeItem(it)) + '</span><span class="amt">' + fmt(it.subtotal) + '</span></div>';
     let costs = '';
-    if (t.flete || t.costoCorte || t.gastosVarios) {
+    if (t.flete || t.costoCorte) {
       const parts = [];
       if (t.flete) parts.push('Flete ' + fmt(t.flete));
-      if (t.gastosVarios) parts.push('Gastos ' + fmt(t.gastosVarios) + (t.gastosNota ? ' (' + t.gastosNota + ')' : ''));
       if (t.costoCorte) parts.push('Corte ' + fmtNum(t.corteToneladas) + ' ton × ' + fmt(t.cortePrecioTon) + ' = ' + fmt(t.costoCorte));
       costs = '<div class="line"><span class="desc">' + esc(parts.join(' · ')) + '</span></div>';
     }
@@ -769,7 +787,8 @@
   function kpi(label, value, alt) { return '<div class="kpi' + (alt ? ' alt' : '') + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>'; }
   function renderRent() {
     let ing = 0, fl = 0, gv = 0, co = 0;
-    for (const t of trips) { ing += t.total; fl += t.flete; gv += t.gastosVarios; co += t.costoCorte; }
+    for (const t of trips) { ing += t.total; fl += t.flete; co += t.costoCorte; }
+    for (const g of gastos) gv += g.monto;
     $('rentGrid').innerHTML = kpi('Ingresos', fmt(ing), true) + kpi('Fletes', fmt(fl), true) + kpi('Gastos varios', fmt(gv), true) + kpi('Costo de corte', fmt(co), true) + kpi('Utilidad neta', fmt(ing - fl - gv - co), false);
   }
 
@@ -811,6 +830,34 @@
       if (!confirm('¿Eliminar este abono?')) return;
       abonos = abonos.filter((a) => a.abonoId !== b.dataset.id);
       send({ action: 'deleteAbonoCorte', abonoId: b.dataset.id });
+      renderAll();
+    }
+  });
+
+  // ====== Gastos varios ======
+  function renderGastos() {
+    let total = 0;
+    for (const g of gastos) total += g.monto;
+    $('gastosTotal').innerHTML = kpi('Total gastos varios', fmt(total), false);
+    const shown = gastos.slice(Math.max(0, gastos.length - gf.shown));
+    const hidden = gastos.length - shown.length;
+    let html = '';
+    if (hidden > 0) html += '<button type="button" class="more-btn" data-act="moreGastos">Ver ' + Math.min(PAGE, hidden) + ' anteriores (' + fmtNum(hidden) + ' más)</button>';
+    if (!gastos.length) html += '<div class="empty">Aún no hay gastos registrados.</div>';
+    for (const g of shown) {
+      html += '<div class="row-card"><div><div class="empresa">' + fechaLegible(g.fecha) + '</div><div class="meta">' + esc(g.notas) + '</div><div class="monto">' + fmt(g.monto) + '</div></div>' +
+        '<button type="button" class="link-btn" data-act="delGasto" data-id="' + esc(g.gastoId) + '">Eliminar</button></div>';
+    }
+    $('gastosList').innerHTML = html;
+  }
+  $('gastosList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    if (b.dataset.act === 'moreGastos') { gf.shown += PAGE; renderGastos(); }
+    else if (b.dataset.act === 'delGasto') {
+      if (!confirm('¿Eliminar este gasto?')) return;
+      gastos = gastos.filter((g) => g.gastoId !== b.dataset.id);
+      send({ action: 'deleteGasto', gastoId: b.dataset.id });
       renderAll();
     }
   });
@@ -878,7 +925,7 @@
 
   function resetTripForm() {
     formItems = [newItem('Rolo')];
-    $('flete').value = ''; $('gastosVarios').value = ''; $('gastosNota').value = ''; $('corteToneladas').value = ''; $('cortePrecioTon').value = ''; $('notas').value = '';
+    $('flete').value = ''; $('corteToneladas').value = ''; $('cortePrecioTon').value = ''; $('notas').value = '';
     $('tripMsg').hidden = true;
     editingId = null;
     $('submitBtn').textContent = 'Registrar viaje';
@@ -904,8 +951,6 @@
     if (companies.indexOf(t.empresa) !== -1) $('empresa').value = t.empresa;
     $('notas').value = t.notas || '';
     $('flete').value = t.flete || '';
-    $('gastosVarios').value = t.gastosVarios || '';
-    $('gastosNota').value = t.gastosNota || '';
     $('corteToneladas').value = t.corteToneladas || '';
     $('cortePrecioTon').value = t.cortePrecioTon || '';
     formItems = t.items.map((it) => ({ uid: ++itemSeq, tipo: it.tipo, cantidad: it.cantidad ? String(it.cantidad) : '', precio: it.precioUnitario ? String(it.precioUnitario) : '', medida: it.medida || '' }));
@@ -930,8 +975,6 @@
     msg.hidden = true;
 
     const flete = parseFloat($('flete').value) || 0;
-    const gastosVarios = parseFloat($('gastosVarios').value) || 0;
-    const gastosNota = $('gastosNota').value.trim();
     const corteToneladas = parseFloat($('corteToneladas').value) || 0;
     const cortePrecioTon = parseFloat($('cortePrecioTon').value) || 0;
     const isEdit = !!editingId;
@@ -939,13 +982,13 @@
     const existing = isEdit ? trips.find((t) => t.id === id) : null;
     const data = {
       id: id, fecha: $('fecha').value, empresa: empresa, notas: $('notas').value.trim(),
-      flete: flete, gastosVarios: gastosVarios, gastosNota: gastosNota, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: corteToneladas * cortePrecioTon,
+      flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: corteToneladas * cortePrecioTon,
       estadoPago: existing ? existing.estadoPago : '', items: items
     };
     const t = normTrip(data);
     if (isEdit) trips = trips.filter((x) => x.id !== id);
     insertSorted(trips, t);
-    send({ action: 'saveTrip', isEdit: isEdit, viajeId: id, fecha: data.fecha, empresa: empresa, notas: data.notas, items: items, flete: flete, gastosVarios: gastosVarios, gastosNota: gastosNota, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: data.costoCorte, estadoPago: data.estadoPago });
+    send({ action: 'saveTrip', isEdit: isEdit, viajeId: id, fecha: data.fecha, empresa: empresa, notas: data.notas, items: items, flete: flete, corteToneladas: corteToneladas, cortePrecioTon: cortePrecioTon, costoCorte: data.costoCorte, estadoPago: data.estadoPago });
     resetTripForm(); // se mantienen fecha y empresa para registrar el siguiente viaje más rápido
     renderAll();
   });
@@ -997,6 +1040,19 @@
     renderAll();
   });
 
+  $('gastoForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('gastoMsg');
+    const monto = parseFloat($('gastoMonto').value) || 0;
+    if (monto <= 0) { msg.textContent = 'Ingresa un monto mayor a cero.'; msg.hidden = false; return; }
+    msg.hidden = true;
+    const g = { gastoId: uuid(), fecha: $('gastoFecha').value, monto: monto, notas: $('gastoNotas').value.trim() };
+    insertSorted(gastos, normGasto(g));
+    send({ action: 'addGasto', gastoId: g.gastoId, fecha: g.fecha, monto: monto, notas: g.notas });
+    $('gastoMonto').value = ''; $('gastoNotas').value = '';
+    renderAll();
+  });
+
   // ====== Resumen ejecutivo ======
   function renderResumen() {
     const tipo = rf.tipo, estado = rf.estado;
@@ -1013,7 +1069,8 @@
     const as = abonos.filter((a) => (!rf.desde || a.fecha >= rf.desde) && (!rf.hasta || a.fecha <= rf.hasta));
 
     let ing = 0, fl = 0, co = 0, gv = 0, tons = 0, pag = 0, abonado = 0;
-    for (const t of ts) { ing += val(t); fl += t.flete; gv += t.gastosVarios; co += t.costoCorte; tons += t.corteToneladas; }
+    for (const t of ts) { ing += val(t); fl += t.flete; co += t.costoCorte; tons += t.corteToneladas; }
+    for (const g of gastos) if ((!rf.desde || g.fecha >= rf.desde) && (!rf.hasta || g.fecha <= rf.hasta)) gv += g.monto;
     for (const p of ps) pag += p.monto;
     for (const a of as) abonado += a.monto;
 
@@ -1100,7 +1157,7 @@
   $('refreshBtn').addEventListener('click', () => loadData(true));
 
   // ====== Inicio ======
-  $('fecha').value = todayISO(); $('pagoFecha').value = todayISO(); $('abonoFecha').value = todayISO();
+  $('fecha').value = todayISO(); $('pagoFecha').value = todayISO(); $('abonoFecha').value = todayISO(); $('gastoFecha').value = todayISO();
   formItems = [newItem('Rolo')];
   renderItems(); updateTotals();
   hasCache = loadCache();
