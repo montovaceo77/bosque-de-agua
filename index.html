@@ -391,7 +391,7 @@
   <div class="card"><h2>Detalle por empresa</h2>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Toneladas</th><th class="num">Facturado</th><th class="num">Pagado</th><th class="num">Pendiente</th><th class="num">% cobrado</th></tr></thead>
+        <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Toneladas</th><th class="num">Facturado</th></tr></thead>
         <tbody id="rfTable"></tbody>
       </table>
     </div>
@@ -1095,10 +1095,10 @@
 
     let tbl = '';
     for (const r of rows) {
-      const pend = r.fact - r.pag;
-      tbl += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmtNum(r.tons) + '</td><td class="num">' + fmt(r.fact) + '</td><td class="num">' + fmt(r.pag) + '</td><td class="num">' + fmt(pend) + '</td><td class="num">' + (r.fact > 0 ? Math.round((r.pag / r.fact) * 100) : 0) + '%</td></tr>';
+      if (!r.viajes) continue;
+      tbl += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmtNum(r.tons) + '</td><td class="num">' + fmt(r.fact) + '</td></tr>';
     }
-    $('rfTable').innerHTML = tbl || '<tr><td colspan="7" class="empty">Sin datos para este filtro.</td></tr>';
+    $('rfTable').innerHTML = tbl || '<tr><td colspan="4" class="empty">Sin datos para este filtro.</td></tr>';
 
     let rec = '';
     for (let i = ts.length - 1, n = 0; i >= 0 && n < 15; i--, n++) {
