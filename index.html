@@ -1079,17 +1079,18 @@
 
     let ing = 0, fl = 0, co = 0, gv = 0, tons = 0, pag = 0, abonado = 0;
     for (const t of ts) { ing += val(t); fl += t.flete; co += t.costoCorte; tons += t.corteToneladas; }
-    for (const g of gastos) if ((!rf.desde || g.fecha >= rf.desde) && (!rf.hasta || g.fecha <= rf.hasta)) gv += g.monto;
+    const filtrado = !!(rf.empresa || rf.desde || rf.hasta || rf.tipo !== 'Todos' || rf.estado !== 'Todos');
+    const gvAplica = !filtrado; // los gastos varios solo cuentan en la utilidad total, sin ningún filtro
+    if (gvAplica) for (const g of gastos) gv += g.monto;
     for (const p of ps) pag += p.monto;
     for (const a of as) abonado += a.monto;
 
-    const filtrado = !!(rf.empresa || rf.desde || rf.hasta || rf.tipo !== 'Todos' || rf.estado !== 'Todos');
     $('kpiMain').innerHTML = kpi('Ingresos totales', fmt(ing), false) + (filtrado ? '' : kpi('Pendiente por cobrar', fmt(ing - pag), false)) + kpi('Utilidad neta', fmt(ing - fl - gv - co), false) + kpi('Utilidad neta por tonelada', tons > 0 ? fmt((ing - fl - gv - co) / tons) : '—', false);
     $('rfNote').textContent = filtrado
-      ? 'Con filtros no se muestra el pendiente por cobrar, porque los pagos no están ligados a un viaje. Con filtro de tipo o estado, las toneladas, fletes y cortes cuentan los viajes completos que incluyen esa selección.'
+      ? 'Con filtros no se muestra el pendiente por cobrar, porque los pagos no están ligados a un viaje. Con filtro de tipo o estado, las toneladas, fletes y cortes cuentan los viajes completos que incluyen esa selección.' + ' Los gastos varios solo se descuentan de la utilidad total, sin filtros.'
       : 'Pendiente por cobrar = todo lo facturado menos todos los pagos recibidos.';
     $('kpiSecondary').innerHTML = kpi('Toneladas totales', fmtNum(tons) + ' ton', true) + kpi('Viajes', fmtNum(ts.length), true) + kpi('Total fletes', fmt(fl), true) + kpi('Corte por tonelada', tons > 0 ? fmt(co / tons) : '$0', true);
-    $('kpiCosts').innerHTML = kpi('Fletes', fmt(fl), true) + kpi('Gastos varios', fmt(gv), true) + kpi('Costo de corte', fmt(co), true) + (filtrado ? '' : kpi('Abonado al corte', fmt(abonado), true) + kpi('Pendiente del corte', fmt(co - abonado), true));
+    $('kpiCosts').innerHTML = kpi('Fletes', fmt(fl), true) + (gvAplica ? kpi('Gastos varios', fmt(gv), true) : '') + kpi('Costo de corte', fmt(co), true) + (filtrado ? '' : kpi('Abonado al corte', fmt(abonado), true) + kpi('Pendiente del corte', fmt(co - abonado), true));
 
     const rows = aggByEmpresa(ts, ps, val).sort((a, b) => b.fact - a.fact);
 
