@@ -399,7 +399,7 @@
   <div class="card"><h2>Detalle por empresa</h2>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Toneladas</th><th class="num">Facturado</th></tr></thead>
+        <thead><tr><th>Empresa</th><th class="num">Viajes</th><th class="num">Toneladas</th><th class="num">Facturado</th><th class="num">Utilidad neta promedio por ton</th></tr></thead>
         <tbody id="rfTable"></tbody>
       </table>
     </div>
@@ -874,8 +874,8 @@
   // ====== Resumen por empresa (sección de Registrar) ======
   function aggByEmpresa(ts, ps, valFn) {
     const m = new Map();
-    const get = (name) => { let e = m.get(name); if (!e) { e = { name: name, viajes: 0, fact: 0, pag: 0, tons: 0 }; m.set(name, e); } return e; };
-    for (const t of ts) { const e = get(t.empresa); e.viajes++; e.fact += valFn ? valFn(t) : t.total; e.tons += t.corteToneladas; }
+    const get = (name) => { let e = m.get(name); if (!e) { e = { name: name, viajes: 0, fact: 0, pag: 0, tons: 0, neto: 0 }; m.set(name, e); } return e; };
+    for (const t of ts) { const e = get(t.empresa); e.viajes++; const v = valFn ? valFn(t) : t.total; e.fact += v; e.neto += v - t.flete - t.costoCorte; e.tons += t.corteToneladas; }
     for (const p of ps) get(p.empresa).pag += p.monto;
     return Array.from(m.values());
   }
@@ -1108,11 +1108,12 @@
     $('rfBars').innerHTML = bars;
 
     let tbl = '';
-    for (const r of rows) {
-      if (!r.viajes) continue;
-      tbl += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmtNum(r.tons) + '</td><td class="num">' + fmt(r.fact) + '</td></tr>';
-    }
-    $('rfTable').innerHTML = tbl || '<tr><td colspan="4" class="empty">Sin datos para este filtro.</td></tr>';
+    const upt = (r) => (r.tons > 0 ? r.neto / r.tons : -Infinity);
+    rows.slice().sort((a, b) => upt(b) - upt(a)).forEach((r) => {
+      if (!r.viajes) return;
+      tbl += '<tr><td>' + esc(r.name) + '</td><td class="num">' + fmtNum(r.viajes) + '</td><td class="num">' + fmtNum(r.tons) + '</td><td class="num">' + fmt(r.fact) + '</td><td class="num">' + (r.tons > 0 ? fmt(r.neto / r.tons) : '—') + '</td></tr>';
+    });
+    $('rfTable').innerHTML = tbl || '<tr><td colspan="5" class="empty">Sin datos para este filtro.</td></tr>';
 
     let rec = '';
     for (let i = ts.length - 1, n = 0; i >= 0 && n < 15; i--, n++) {
