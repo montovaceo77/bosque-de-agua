@@ -142,9 +142,10 @@
   .chips button { padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); font-family: inherit; font-size: 0.82rem; cursor: pointer; }
   .chips button.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
   .hbar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .hbar-label { width: 130px; flex-shrink: 0; font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hbar-track { flex: 1; background: var(--bg); border-radius: 6px; height: 24px; overflow: hidden; }
+  .hbar-label { width: clamp(105px, 32%, 170px); flex-shrink: 0; font-size: 0.8rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .hbar-track { flex: 1; background: var(--bg); border-radius: 6px; height: 24px; overflow: hidden; display: flex; align-items: center; }
   .hbar-fill { height: 100%; min-width: 4px; border-radius: 6px; background: var(--primary); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; }
+  .hbar-out { color: var(--text); font-size: 0.74rem; font-weight: 600; white-space: nowrap; margin-left: 8px; }
   .hbar-fill span { color: var(--primary-text); font-size: 0.74rem; font-weight: 600; white-space: nowrap; }
 
   .bottom-tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--card); border-top: 1px solid var(--border); z-index: 50; padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -407,13 +408,15 @@
 
   <div class="card"><h2>Fletes y corte</h2><div class="kpi-grid" id="kpiCosts"></div></div>
 
-  <div class="card"><h2>Viajes recientes</h2>
+  <div class="card"><h2>Viajes</h2>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Fecha</th><th>Empresa</th><th>Tipo</th><th class="num">Total</th><th>Estado</th></tr></thead>
         <tbody id="rfRecent"></tbody>
       </table>
     </div>
+    <p class="muted" id="rfRecentInfo" style="margin:10px 0 0;"></p>
+    <button type="button" class="more-btn" id="rfMore" style="margin:10px 0 0;" hidden></button>
   </div>
 </div>
 
@@ -479,6 +482,7 @@
   let selectMode = false;
   const selected = new Set();
   const rf = { empresa: '', tipo: 'Todos', estado: 'Todos', desde: '', hasta: '' };
+  let rfShown = 15, rfSig = '';
 
   // ====== Normalización ======
   function normTrip(t) {
@@ -1099,11 +1103,12 @@
     const withFact = rows.filter((r) => r.fact > 0);
     if (!withFact.length) bars = '<div class="empty">Sin datos para este filtro.</div>';
     else {
-      const top = withFact.slice(0, 10);
-      const rest = withFact.slice(10);
-      if (rest.length) top.push({ name: 'Otras (' + rest.length + ')', fact: rest.reduce((s, r) => s + r.fact, 0) });
-      const max = Math.max.apply(null, top.map((r) => r.fact).concat([1]));
-      for (const r of top) bars += '<div class="hbar"><div class="hbar-label" title="' + esc(r.name) + '">' + esc(r.name) + '</div><div class="hbar-track"><div class="hbar-fill" style="width:' + Math.max((r.fact / max) * 100, 3) + '%"><span>' + fmt(r.fact) + '</span></div></div></div>';
+      const max = Math.max.apply(null, withFact.map((r) => r.fact).concat([1]));
+      for (const r of withFact) {
+        const pct = Math.max((r.fact / max) * 100, 3);
+        const inside = pct >= 40; // si la barra es corta, el valor va afuera para que no se corte
+        bars += '<div class="hbar"><div class="hbar-label" title="' + esc(r.name) + '">' + esc(r.name) + '</div><div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%">' + (inside ? '<span>' + fmt(r.fact) + '</span>' : '') + '</div>' + (inside ? '' : '<span class="hbar-out">' + fmt(r.fact) + '</span>') + '</div></div>';
+      }
     }
     $('rfBars').innerHTML = bars;
 
@@ -1115,15 +1120,22 @@
     });
     $('rfTable').innerHTML = tbl || '<tr><td colspan="5" class="empty">Sin datos para este filtro.</td></tr>';
 
+    const sig = JSON.stringify(rf);
+    if (sig !== rfSig) { rfSig = sig; rfShown = 15; }
     let rec = '';
-    for (let i = ts.length - 1, n = 0; i >= 0 && n < 15; i--, n++) {
+    for (let i = ts.length - 1, n = 0; i >= 0 && n < rfShown; i--, n++) {
       const t = ts[i];
       const est = estadoNombre(t.estadoPago);
       const tipos = Array.from(new Set(t.items.map((x) => x.tipo))).join(' + ');
       rec += '<tr><td>' + fechaLegible(t.fecha) + '</td><td>' + esc(t.empresa) + '</td><td>' + esc(tipos) + '</td><td class="num">' + fmt(val(t)) + '</td><td><span class="dot ' + est.toLowerCase() + '"></span>' + est + '</td></tr>';
     }
     $('rfRecent').innerHTML = rec || '<tr><td colspan="5" class="empty">Sin viajes para este filtro.</td></tr>';
+    const shownN = Math.min(rfShown, ts.length), restantes = ts.length - shownN;
+    $('rfRecentInfo').textContent = ts.length ? 'Mostrando ' + fmtNum(shownN) + ' de ' + fmtNum(ts.length) + ' viajes. Para ver quién debe, usa el filtro Pendiente.' : '';
+    $('rfMore').hidden = restantes <= 0;
+    $('rfMore').textContent = 'Ver ' + Math.min(30, restantes) + ' más (' + fmtNum(restantes) + ' restantes)';
   }
+  $('rfMore').addEventListener('click', () => { rfShown += 30; renderResumen(); });
   $('rfEmpresa').addEventListener('change', (e) => { rf.empresa = e.target.value; renderResumen(); });
   $('rfDesde').addEventListener('change', (e) => { rf.desde = e.target.value; renderResumen(); });
   $('rfHasta').addEventListener('change', (e) => { rf.hasta = e.target.value; renderResumen(); });
