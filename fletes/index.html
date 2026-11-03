@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fletes — Bosque de Agua</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1D4E5F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fletes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EDF2F4; --card: #FAFCFD; --text: #14262D; --muted: #5C7079;
+    --primary: #1D4E5F; --primary-text: #EEF6F8; --accent: #1F8A74; --accent-bg: #D6F1EA;
+    --border: #CBD9DE; --danger: #B3472F; --danger-bg: #F6E1DB;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.45; }
+  h1, h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; margin: 0; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { margin-bottom: 18px; }
+  header .kicker { color: var(--muted); font-size: 0.9rem; margin: 0 0 4px; }
+  header h1 { font-size: 1.6rem; color: var(--primary); }
+  .status { font-size: 0.8rem; color: var(--muted); height: 18px; margin-top: 6px; }
+  .banner { background: var(--danger-bg); color: var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 0.86rem; margin-bottom: 14px; }
+  .banner.info { background: var(--accent-bg); color: var(--accent); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .card > h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 14px; }
+  label { display: block; font-size: 0.84rem; color: var(--muted); margin-bottom: 6px; }
+  .field { margin-bottom: 16px; }
+  input, select { width: 100%; padding: 13px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chip { padding: 13px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; }
+  .chip.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+
+  .total { display: flex; justify-content: space-between; align-items: baseline; background: var(--accent-bg); color: var(--accent); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .total span { font-size: 0.88rem; }
+  .total strong { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+  .btn { width: 100%; padding: 15px; border-radius: 12px; border: 0; background: var(--primary); color: var(--primary-text); font-family: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: 0.88; }
+  .msg { font-size: 0.86rem; color: var(--danger); margin: 0 0 12px; }
+
+  .item { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .item:first-of-type { border-top: 0; padding-top: 0; }
+  .item .cli { font-weight: 600; font-size: 0.95rem; }
+  .item .meta { color: var(--muted); font-size: 0.84rem; margin-top: 2px; }
+  .item .amt { font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .item.saving { opacity: 0.6; }
+  .link-btn { background: none; border: 0; color: var(--muted); font-family: inherit; font-size: 0.84rem; cursor: pointer; padding: 4px 0; }
+  .more-btn { width: 100%; padding: 11px; margin-top: 8px; border-radius: 10px; border: 1px dashed var(--border); background: transparent; color: var(--primary); font-family: inherit; font-size: 0.9rem; cursor: pointer; }
+  .empty { color: var(--muted); font-size: 0.9rem; padding: 6px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Finca El Laurel</p>
+    <h1>Fletes Bosque de Agua</h1>
+    <div class="status" id="status"></div>
+  </header>
+
+  <div class="banner" id="setupNote" hidden>Falta pegar la URL del Apps Script en la línea APPS_SCRIPT_URL de este archivo.</div>
+  <div class="banner" id="errBanner" hidden></div>
+
+  <div class="card">
+    <h2>Registrar flete</h2>
+    <form id="fleteForm" autocomplete="off">
+      <div class="field"><label for="fecha">Fecha</label><input type="date" id="fecha"></div>
+      <div class="field">
+        <label for="cliente">Cliente</label>
+        <select id="cliente"><option value="">Elige un cliente</option></select>
+      </div>
+      <div class="field"><label for="toneladas">Toneladas del viaje</label><input type="number" id="toneladas" inputmode="decimal" step="any" min="0" placeholder="0"></div>
+      <div class="field">
+        <label>Valor por tonelada</label>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="total"><span>Total del flete</span><strong id="totalPreview">$ 0</strong></div>
+      <p class="msg" id="formMsg" hidden></p>
+      <button type="submit" class="btn">Guardar flete</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Fletes registrados</h2>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHZf-wNCgukdtRRR3phXGE_gvLFN6RHoi4THUfM0feE0WvODFVzv9ZciUUbaxZ86hqwg/exec';
+  const CACHE_KEY = 'bosque_fletes_cache_v1';
+  const VALORES = [50000, 55000, 60000, 65000, 70000];
+  const PAGE = 15;
+
+  const $ = (id) => document.getElementById(id);
+  const nf = new Intl.NumberFormat('es-CO');
+  const cf = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+  const fmt = (n) => cf.format(n || 0);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = (n) => (n < 10 ? '0' + n : '' + n);
+  const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const dateOnly = (v) => { const s = String(v || ''); return s.indexOf('T') !== -1 ? s.split('T')[0] : s.slice(0, 10); };
+  function fechaLegible(iso) {
+    const p = String(iso).split('-');
+    if (p.length !== 3) return iso;
+    const d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return isNaN(d) ? iso : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  const uuid = () => (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+
+  let companies = [], fletes = [], valor = 0, shown = PAGE;
+  let pending = 0, hadError = false, mutations = 0, chain = Promise.resolve();
+  const savingIds = new Set();
+
+  const urlOk = () => APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('PEGA_AQUI') === -1;
+
+  function setStatus(t) { $('status').textContent = t || ''; }
+  function showError(t) { const b = $('errBanner'); b.textContent = t; b.hidden = !t; }
+
+  // ---------- caché local ----------
+  function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ companies: companies, fletes: fletes })); } catch (e) {} }
+  function loadCache() {
+    try {
+      const d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (!d) return false;
+      companies = d.companies || []; fletes = d.fletes || [];
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ---------- datos ----------
+  function normFlete(f) {
+    return { fleteId: String(f.fleteId), fecha: dateOnly(f.fecha), cliente: f.cliente || '', toneladas: +f.toneladas || 0, valorTon: +f.valorTon || 0, total: +f.total || ((+f.toneladas || 0) * (+f.valorTon || 0)) };
+  }
+  async function load() {
+    if (!urlOk()) { $('setupNote').hidden = false; return; }
+    const startMut = mutations;
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + '?view=fletes');
+      const d = await res.json();
+      if (mutations !== startMut || pending > 0) return; // hubo cambios mientras cargaba: no pisar lo nuevo
+      companies = (d.companies || []).map(String).sort((a, b) => a.localeCompare(b, 'es'));
+      fletes = (d.fletes || []).map(normFlete);
+      saveCache(); renderAll();
+    } catch (e) {
+      if (!companies.length) showError('No se pudo cargar la lista de clientes. Revisa la conexión y recarga la página.');
+    }
+  }
+  function send(payload) {
+    mutations++;
+    if (!urlOk()) return;
+    pending++; setStatus('Guardando…');
+    chain = chain.then(async () => {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const d = await res.json();
+        if (!d || d.ok === false) throw new Error((d && d.error) || 'Error');
+        if (payload.action === 'addFlete') savingIds.delete(payload.fleteId);
+      } catch (e) {
+        hadError = true;
+      } finally {
+        pending--;
+        if (pending === 0) {
+          if (hadError) {
+            hadError = false; savingIds.clear();
+            showError('No se pudo guardar un flete. Se recargó la lista: revisa y vuelve a registrar el que falte.');
+            setStatus(''); load();
+          } else {
+            setStatus('Guardado ✓'); renderList();
+            setTimeout(() => { if (pending === 0) setStatus(''); }, 2500);
+          }
+        }
+      }
+    });
+  }
+
+  // ---------- pantalla ----------
+  function renderSelect() {
+    const cur = $('cliente').value;
+    let html = '<option value="">Elige un cliente</option>';
+    for (const c of companies) html += '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    $('cliente').innerHTML = html;
+    if (cur && companies.indexOf(cur) !== -1) $('cliente').value = cur;
+  }
+  function renderChips() {
+    let html = '';
+    for (const v of VALORES) html += '<button type="button" class="chip' + (v === valor ? ' active' : '') + '" data-v="' + v + '">' + fmt(v) + '</button>';
+    $('chips').innerHTML = html;
+  }
+  function updateTotal() {
+    $('totalPreview').textContent = fmt((parseFloat($('toneladas').value) || 0) * valor);
+  }
+  function renderList() {
+    const arr = fletes.map((f, i) => ({ f: f, i: i })).sort((a, b) => (a.f.fecha < b.f.fecha ? 1 : a.f.fecha > b.f.fecha ? -1 : b.i - a.i)).map((x) => x.f);
+    const slice = arr.slice(0, shown);
+    let html = '';
+    if (!arr.length) html = '<div class="empty">Aún no hay fletes registrados.</div>';
+    for (const f of slice) {
+      const saving = savingIds.has(f.fleteId);
+      html += '<div class="item' + (saving ? ' saving' : '') + '"><div><div class="cli">' + esc(f.cliente) + '</div>' +
+        '<div class="meta">' + fechaLegible(f.fecha) + ' · ' + nf.format(f.toneladas) + ' ton × ' + fmt(f.valorTon) + '</div>' +
+        '<div class="amt">' + fmt(f.total) + (saving ? ' · guardando…' : '') + '</div></div>' +
+        '<button type="button" class="link-btn" data-del="' + esc(f.fleteId) + '">Eliminar</button></div>';
+    }
+    if (arr.length > shown) html += '<button type="button" class="more-btn" id="moreBtn">Ver ' + Math.min(PAGE, arr.length - shown) + ' más (' + (arr.length - shown) + ' restantes)</button>';
+    $('list').innerHTML = html;
+  }
+  function renderAll() {
+    renderSelect(); renderList();
+    if (urlOk() && !companies.length) showError('Todavía no hay clientes. Pídele a María que los agregue en la app de despachos.');
+    else if (companies.length) showError('');
+  }
+
+  // ---------- eventos ----------
+  $('chips').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-v]');
+    if (!b) return;
+    valor = +b.dataset.v; renderChips(); updateTotal();
+  });
+  $('toneladas').addEventListener('input', updateTotal);
+  $('list').addEventListener('click', (e) => {
+    if (e.target.id === 'moreBtn') { shown += 30; renderList(); return; }
+    const b = e.target.closest('[data-del]');
+    if (!b) return;
+    const id = b.dataset.del;
+    if (savingIds.has(id)) return;
+    if (!confirm('¿Eliminar este flete?')) return;
+    fletes = fletes.filter((f) => f.fleteId !== id);
+    saveCache(); renderList();
+    send({ action: 'deleteFlete', fleteId: id });
+  });
+  $('fleteForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('formMsg');
+    const toneladas = parseFloat($('toneladas').value) || 0;
+    const cliente = $('cliente').value;
+    const fecha = $('fecha').value;
+    let err = '';
+    if (!fecha) err = 'Elige la fecha.';
+    else if (!cliente) err = 'Elige el cliente.';
+    else if (toneladas <= 0) err = 'Escribe las toneladas del viaje.';
+    else if (!valor) err = 'Elige el valor por tonelada.';
+    if (err) { msg.textContent = err; msg.hidden = false; return; }
+    msg.hidden = true; showError('');
+    const f = normFlete({ fleteId: uuid(), fecha: fecha, cliente: cliente, toneladas: toneladas, valorTon: valor });
+    fletes.push(f); savingIds.add(f.fleteId);
+    saveCache(); shown = Math.max(shown, PAGE); renderList();
+    send({ action: 'addFlete', fleteId: f.fleteId, fecha: f.fecha, cliente: f.cliente, toneladas: f.toneladas, valorTon: f.valorTon });
+    // se conserva la fecha; lo demás se limpia para no guardar un flete con datos del anterior
+    $('toneladas').value = ''; $('cliente').value = ''; valor = 0; renderChips(); updateTotal();
+  });
+  window.addEventListener('beforeunload', (e) => { if (pending > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- inicio ----------
+  $('fecha').value = todayISO();
+  renderChips();
+  if (loadCache()) renderAll();
+  load();
+})();
+</script>
+</body>
+</html>
