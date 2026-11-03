@@ -39,6 +39,11 @@
   .field { margin-bottom: 16px; }
   input, select { width: 100%; padding: 13px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1.05rem; font-family: inherit; }
   input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .field { min-width: 0; }
+  /* el cuadro de fecha en celulares (sobre todo iPhone) tiene un ancho propio y se sale de la tarjeta */
+  input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 50px; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  input[type="date"]::-webkit-datetime-edit { padding: 0; }
 
   .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .chip { padding: 13px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; }
@@ -81,7 +86,7 @@
         <label for="cliente">Cliente</label>
         <select id="cliente"><option value="">Elige un cliente</option></select>
       </div>
-      <div class="field"><label for="toneladas">Toneladas del viaje</label><input type="number" id="toneladas" inputmode="decimal" step="any" min="0" placeholder="0"></div>
+      <div class="field"><label for="toneladas">Toneladas del viaje</label><input type="text" id="toneladas" inputmode="decimal" autocomplete="off" placeholder="0"></div>
       <div class="field">
         <label>Valor por tonelada</label>
         <div class="chips" id="chips"></div>
@@ -231,7 +236,15 @@
     if (!b) return;
     valor = +b.dataset.v; renderChips(); updateTotal();
   });
-  $('toneladas').addEventListener('input', updateTotal);
+  // las toneladas se escriben con punto: si el teclado da coma, se cambia sola por punto
+  $('toneladas').addEventListener('input', (e) => {
+    const el = e.target;
+    let v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const i = v.indexOf('.');
+    if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
+    if (v !== el.value) el.value = v;
+    updateTotal();
+  });
   $('list').addEventListener('click', (e) => {
     if (e.target.id === 'moreBtn') { shown += 30; renderList(); return; }
     const b = e.target.closest('[data-del]');
