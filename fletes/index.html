@@ -45,6 +45,10 @@
   input[type="date"]::-webkit-date-and-time-value { text-align: left; }
   input[type="date"]::-webkit-datetime-edit { padding: 0; }
 
+  .kg-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; }
+  .conv { display: flex; flex-direction: column; justify-content: center; background: var(--accent-bg); color: var(--accent); border-radius: 10px; padding: 6px 14px; min-width: 116px; text-align: right; }
+  .conv small { font-size: 0.72rem; }
+  .conv strong { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
   .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .chip { padding: 13px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; }
   .chip.active { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
@@ -86,7 +90,17 @@
         <label for="cliente">Cliente</label>
         <select id="cliente"><option value="">Elige un cliente</option></select>
       </div>
-      <div class="field"><label for="toneladas">Toneladas del viaje</label><input type="text" id="toneladas" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+      <div class="field">
+        <label for="conductor">Conductor</label>
+        <select id="conductor"><option value="">Elige un conductor</option></select>
+      </div>
+      <div class="field">
+        <label for="kilos">Peso del viaje (en kilos)</label>
+        <div class="kg-row">
+          <input type="text" id="kilos" inputmode="numeric" autocomplete="off" placeholder="0">
+          <div class="conv" id="conv"><small>equivale a</small><strong id="convTon">0 ton</strong></div>
+        </div>
+      </div>
       <div class="field">
         <label>Valor por tonelada</label>
         <div class="chips" id="chips"></div>
@@ -109,6 +123,8 @@
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHZf-wNCgukdtRRR3phXGE_gvLFN6RHoi4THUfM0feE0WvODFVzv9ZciUUbaxZ86hqwg/exec';
   const CACHE_KEY = 'bosque_fletes_cache_v1';
   const VALORES = [50000, 55000, 60000, 65000, 70000];
+  const CONDUCTORES = ['Elber Rojas', 'Janier'];
+  const tonFmt = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 3 });
   const PAGE = 15;
 
   const $ = (id) => document.getElementById(id);
@@ -149,7 +165,7 @@
 
   // ---------- datos ----------
   function normFlete(f) {
-    return { fleteId: String(f.fleteId), fecha: dateOnly(f.fecha), cliente: f.cliente || '', toneladas: +f.toneladas || 0, valorTon: +f.valorTon || 0, total: +f.total || ((+f.toneladas || 0) * (+f.valorTon || 0)) };
+    return { fleteId: String(f.fleteId), fecha: dateOnly(f.fecha), cliente: f.cliente || '', conductor: f.conductor || '', toneladas: +f.toneladas || 0, valorTon: +f.valorTon || 0, total: +f.total || ((+f.toneladas || 0) * (+f.valorTon || 0)) };
   }
   async function load() {
     if (!urlOk()) { $('setupNote').hidden = false; return; }
@@ -206,8 +222,16 @@
     for (const v of VALORES) html += '<button type="button" class="chip' + (v === valor ? ' active' : '') + '" data-v="' + v + '">' + fmt(v) + '</button>';
     $('chips').innerHTML = html;
   }
+  function kilosValue() { return parseInt($('kilos').value, 10) || 0; }
   function updateTotal() {
-    $('totalPreview').textContent = fmt((parseFloat($('toneladas').value) || 0) * valor);
+    const ton = kilosValue() / 1000;
+    $('convTon').textContent = tonFmt.format(ton) + ' ton';
+    $('totalPreview').textContent = fmt(ton * valor);
+  }
+  function renderConductores() {
+    let html = '<option value="">Elige un conductor</option>';
+    for (const c of CONDUCTORES) html += '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    $('conductor').innerHTML = html;
   }
   function renderList() {
     const arr = fletes.map((f, i) => ({ f: f, i: i })).sort((a, b) => (a.f.fecha < b.f.fecha ? 1 : a.f.fecha > b.f.fecha ? -1 : b.i - a.i)).map((x) => x.f);
@@ -217,7 +241,7 @@
     for (const f of slice) {
       const saving = savingIds.has(f.fleteId);
       html += '<div class="item' + (saving ? ' saving' : '') + '"><div><div class="cli">' + esc(f.cliente) + '</div>' +
-        '<div class="meta">' + fechaLegible(f.fecha) + ' · ' + nf.format(f.toneladas) + ' ton × ' + fmt(f.valorTon) + '</div>' +
+        '<div class="meta">' + fechaLegible(f.fecha) + ' · ' + tonFmt.format(f.toneladas) + ' ton × ' + fmt(f.valorTon) + (f.conductor ? ' · ' + esc(f.conductor) : '') + '</div>' +
         '<div class="amt">' + fmt(f.total) + (saving ? ' · guardando…' : '') + '</div></div>' +
         '<button type="button" class="link-btn" data-del="' + esc(f.fleteId) + '">Eliminar</button></div>';
     }
@@ -236,12 +260,10 @@
     if (!b) return;
     valor = +b.dataset.v; renderChips(); updateTotal();
   });
-  // las toneladas se escriben con punto: si el teclado da coma, se cambia sola por punto
-  $('toneladas').addEventListener('input', (e) => {
+  // los kilos se escriben solo con números: se quitan puntos, comas y espacios (10.500 queda 10500)
+  $('kilos').addEventListener('input', (e) => {
     const el = e.target;
-    let v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
-    const i = v.indexOf('.');
-    if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
+    const v = el.value.replace(/\D/g, '');
     if (v !== el.value) el.value = v;
     updateTotal();
   });
@@ -259,28 +281,31 @@
   $('fleteForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const msg = $('formMsg');
-    const toneladas = parseFloat($('toneladas').value) || 0;
+    const kilos = kilosValue();
+    const toneladas = kilos / 1000;
+    const conductor = $('conductor').value;
     const cliente = $('cliente').value;
     const fecha = $('fecha').value;
     let err = '';
     if (!fecha) err = 'Elige la fecha.';
     else if (!cliente) err = 'Elige el cliente.';
-    else if (toneladas <= 0) err = 'Escribe las toneladas del viaje.';
+    else if (!conductor) err = 'Elige el conductor.';
+    else if (kilos <= 0) err = 'Escribe el peso del viaje en kilos.';
     else if (!valor) err = 'Elige el valor por tonelada.';
     if (err) { msg.textContent = err; msg.hidden = false; return; }
     msg.hidden = true; showError('');
-    const f = normFlete({ fleteId: uuid(), fecha: fecha, cliente: cliente, toneladas: toneladas, valorTon: valor });
+    const f = normFlete({ fleteId: uuid(), fecha: fecha, cliente: cliente, conductor: conductor, toneladas: toneladas, valorTon: valor });
     fletes.push(f); savingIds.add(f.fleteId);
     saveCache(); shown = Math.max(shown, PAGE); renderList();
-    send({ action: 'addFlete', fleteId: f.fleteId, fecha: f.fecha, cliente: f.cliente, toneladas: f.toneladas, valorTon: f.valorTon });
+    send({ action: 'addFlete', fleteId: f.fleteId, fecha: f.fecha, cliente: f.cliente, conductor: f.conductor, toneladas: f.toneladas, valorTon: f.valorTon });
     // se conserva la fecha; lo demás se limpia para no guardar un flete con datos del anterior
-    $('toneladas').value = ''; $('cliente').value = ''; valor = 0; renderChips(); updateTotal();
+    $('kilos').value = ''; $('cliente').value = ''; $('conductor').value = ''; valor = 0; renderChips(); updateTotal();
   });
   window.addEventListener('beforeunload', (e) => { if (pending > 0) { e.preventDefault(); e.returnValue = ''; } });
 
   // ---------- inicio ----------
   $('fecha').value = todayISO();
-  renderChips();
+  renderChips(); renderConductores(); updateTotal();
   if (loadCache()) renderAll();
   load();
 })();
