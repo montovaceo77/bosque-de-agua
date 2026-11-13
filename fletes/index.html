@@ -37,8 +37,10 @@
   .card > h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 14px; }
   label { display: block; font-size: 0.84rem; color: var(--muted); margin-bottom: 6px; }
   .field { margin-bottom: 16px; }
-  input, select { width: 100%; padding: 13px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1.05rem; font-family: inherit; }
-  input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  input, select, textarea { width: 100%; padding: 13px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1.05rem; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  textarea { resize: vertical; min-height: 80px; }
+  input[hidden] { display: none; }
   .field { min-width: 0; }
   /* el cuadro de fecha en celulares (sobre todo iPhone) tiene un ancho propio y se sale de la tarjeta */
   input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 50px; text-align: left; }
@@ -93,6 +95,7 @@
       <div class="field">
         <label for="conductor">Conductor</label>
         <select id="conductor"><option value="">Elige un conductor</option></select>
+        <input type="text" id="conductorOtro" placeholder="Escribe el nombre del conductor" maxlength="60" style="margin-top:8px" hidden>
       </div>
       <div class="field">
         <label for="kilos">Peso del viaje (en kilos)</label>
@@ -104,6 +107,10 @@
       <div class="field">
         <label>Valor por tonelada</label>
         <div class="chips" id="chips"></div>
+      </div>
+      <div class="field">
+        <label for="notas">Comentarios o novedades <span style="font-weight:400;opacity:.7">(opcional)</span></label>
+        <textarea id="notas" rows="3" maxlength="500" placeholder="Escribe aquí si hubo alguna novedad con este viaje"></textarea>
       </div>
       <div class="total"><span>Total del flete</span><strong id="totalPreview">$ 0</strong></div>
       <p class="msg" id="formMsg" hidden></p>
@@ -122,8 +129,9 @@
   'use strict';
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHZf-wNCgukdtRRR3phXGE_gvLFN6RHoi4THUfM0feE0WvODFVzv9ZciUUbaxZ86hqwg/exec';
   const CACHE_KEY = 'bosque_fletes_cache_v1';
-  const VALORES = [50000, 55000, 60000, 65000, 70000];
+  const VALORES = [50000, 55000, 60000, 65000, 70000, 0];
   const CONDUCTORES = ['Elber Rojas', 'Janier'];
+  const OTRO = '__otro__';
   const tonFmt = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 3 });
   const PAGE = 15;
 
@@ -143,7 +151,7 @@
   }
   const uuid = () => (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 
-  let companies = [], fletes = [], valor = 0, shown = PAGE;
+  let companies = [], fletes = [], valor = null, shown = PAGE;
   let pending = 0, hadError = false, mutations = 0, chain = Promise.resolve();
   const savingIds = new Set();
 
@@ -165,7 +173,7 @@
 
   // ---------- datos ----------
   function normFlete(f) {
-    return { fleteId: String(f.fleteId), fecha: dateOnly(f.fecha), cliente: f.cliente || '', conductor: f.conductor || '', toneladas: +f.toneladas || 0, valorTon: +f.valorTon || 0, total: +f.total || ((+f.toneladas || 0) * (+f.valorTon || 0)) };
+    return { fleteId: String(f.fleteId), fecha: dateOnly(f.fecha), cliente: f.cliente || '', conductor: f.conductor || '', notas: f.notas || '', toneladas: +f.toneladas || 0, valorTon: +f.valorTon || 0, total: (f.total != null && f.total !== '') ? +f.total || 0 : ((+f.toneladas || 0) * (+f.valorTon || 0)) };
   }
   async function load() {
     if (!urlOk()) { $('setupNote').hidden = false; return; }
@@ -219,18 +227,19 @@
   }
   function renderChips() {
     let html = '';
-    for (const v of VALORES) html += '<button type="button" class="chip' + (v === valor ? ' active' : '') + '" data-v="' + v + '">' + fmt(v) + '</button>';
+    for (const v of VALORES) html += '<button type="button" class="chip' + (v === valor ? ' active' : '') + '" data-v="' + v + '">' + (v === 0 ? '$0 (sin cobro)' : fmt(v)) + '</button>';
     $('chips').innerHTML = html;
   }
   function kilosValue() { return parseInt($('kilos').value, 10) || 0; }
   function updateTotal() {
     const ton = kilosValue() / 1000;
     $('convTon').textContent = tonFmt.format(ton) + ' ton';
-    $('totalPreview').textContent = fmt(ton * valor);
+    $('totalPreview').textContent = fmt(ton * (valor || 0));
   }
   function renderConductores() {
     let html = '<option value="">Elige un conductor</option>';
     for (const c of CONDUCTORES) html += '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    html += '<option value="' + OTRO + '">Otro…</option>';
     $('conductor').innerHTML = html;
   }
   function renderList() {
@@ -242,6 +251,7 @@
       const saving = savingIds.has(f.fleteId);
       html += '<div class="item' + (saving ? ' saving' : '') + '"><div><div class="cli">' + esc(f.cliente) + '</div>' +
         '<div class="meta">' + fechaLegible(f.fecha) + ' · ' + tonFmt.format(f.toneladas) + ' ton × ' + fmt(f.valorTon) + (f.conductor ? ' · ' + esc(f.conductor) : '') + '</div>' +
+        (f.notas ? '<div class="meta" style="font-style:italic">“' + esc(f.notas) + '”</div>' : '') +
         '<div class="amt">' + fmt(f.total) + (saving ? ' · guardando…' : '') + '</div></div>' +
         '<button type="button" class="link-btn" data-del="' + esc(f.fleteId) + '">Eliminar</button></div>';
     }
@@ -255,6 +265,11 @@
   }
 
   // ---------- eventos ----------
+  $('conductor').addEventListener('change', () => {
+    const o = $('conductor').value === OTRO;
+    $('conductorOtro').hidden = !o;
+    if (o) $('conductorOtro').focus(); else $('conductorOtro').value = '';
+  });
   $('chips').addEventListener('click', (e) => {
     const b = e.target.closest('[data-v]');
     if (!b) return;
@@ -283,23 +298,24 @@
     const msg = $('formMsg');
     const kilos = kilosValue();
     const toneladas = kilos / 1000;
-    const conductor = $('conductor').value;
+    const conductor = $('conductor').value === OTRO ? $('conductorOtro').value.trim() : $('conductor').value;
+    const notas = $('notas').value.trim();
     const cliente = $('cliente').value;
     const fecha = $('fecha').value;
     let err = '';
     if (!fecha) err = 'Elige la fecha.';
     else if (!cliente) err = 'Elige el cliente.';
-    else if (!conductor) err = 'Elige el conductor.';
+    else if (!conductor) err = $('conductor').value === OTRO ? 'Escribe el nombre del conductor.' : 'Elige el conductor.';
     else if (kilos <= 0) err = 'Escribe el peso del viaje en kilos.';
-    else if (!valor) err = 'Elige el valor por tonelada.';
+    else if (valor === null) err = 'Elige el valor por tonelada.';
     if (err) { msg.textContent = err; msg.hidden = false; return; }
     msg.hidden = true; showError('');
-    const f = normFlete({ fleteId: uuid(), fecha: fecha, cliente: cliente, conductor: conductor, toneladas: toneladas, valorTon: valor });
+    const f = normFlete({ fleteId: uuid(), fecha: fecha, cliente: cliente, conductor: conductor, notas: notas, toneladas: toneladas, valorTon: valor });
     fletes.push(f); savingIds.add(f.fleteId);
     saveCache(); shown = Math.max(shown, PAGE); renderList();
-    send({ action: 'addFlete', fleteId: f.fleteId, fecha: f.fecha, cliente: f.cliente, conductor: f.conductor, toneladas: f.toneladas, valorTon: f.valorTon });
+    send({ action: 'addFlete', fleteId: f.fleteId, fecha: f.fecha, cliente: f.cliente, conductor: f.conductor, notas: f.notas, toneladas: f.toneladas, valorTon: f.valorTon });
     // se conserva la fecha; lo demás se limpia para no guardar un flete con datos del anterior
-    $('kilos').value = ''; $('cliente').value = ''; $('conductor').value = ''; valor = 0; renderChips(); updateTotal();
+    $('kilos').value = ''; $('cliente').value = ''; $('conductor').value = ''; $('conductorOtro').value = ''; $('conductorOtro').hidden = true; $('notas').value = ''; valor = null; renderChips(); updateTotal();
   });
   window.addEventListener('beforeunload', (e) => { if (pending > 0) { e.preventDefault(); e.returnValue = ''; } });
 
